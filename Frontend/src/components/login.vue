@@ -29,14 +29,14 @@
         director: "director"
     })
 
-    function esExistente(uidUser, email, nombre, rol) {
+    function esExistente(uidUser) {
         // Consultar a la base de datos si hay un usuario con la uid
-        
         // if si la consulta devuelve true no debe hacer nada
         // if si la consulta devuelve false toma los datos del usuario y hace un insert para el registro
+        return true
     }
 
-    function obtenerRol(email, nombre){
+    function obtenerRol(email, nombre, uid){
         // -- email --
         // Separar email direccion@dominio
         const direccion = email.split("@")[0]
@@ -47,9 +47,9 @@
         nombreApellido = nombreApellido.toLowerCase()
 
         // Comparaciones
-        const esAlumno = dominio === rol_type.alumno // && nombreApellido === direccion - no se si tiene sentido
-        const esProfesor = dominio === rol_type.profesor
-        const esDirector = direccion.slice(0,3) === rol_type.director && dominio === rol_type.profesor
+        const esAlumno = dominio === rol_type.alumno && esExistente(uid) === true // && nombreApellido === direccion - no se si tiene sentido
+        const esProfesor = dominio === rol_type.profesor && esExistente(uid) === true
+        const esDirector = direccion.slice(0,3) === rol_type.director && dominio === rol_type.profesor && esExistente(uid) === true
 
         // Devolver
         if (esAlumno === true){
@@ -66,8 +66,13 @@
             return console.log("Es un director")
         }
         
+        // Manejo de errores
         if(dominio !== rol_type.alumno && dominio !== rol_type.profesor) {
             return alert("El correo utilizado para la autenticacion no pertenece a la organización, porfavor utilice un corrreo institucional")
+        }
+
+        if (esExistente() === false){
+            return alert("Es tu primera vez en esta app, Registrate!")
         }
 
         else {
@@ -87,5 +92,6 @@
 </script>
 
 <template>
-    <button @click="loginGoogle()">Loggin con google</button>
+    <button class="" @click="loginGoogle()">Loggin con google</button>
+    <router-link class="pl-5" to="/register">¿No te haz registrado?, haz click aqui.</router-link>
 </template>
