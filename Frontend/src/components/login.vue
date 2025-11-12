@@ -1,95 +1,78 @@
 <script setup>
     import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
+    // Para redirigir
+    import { useRouter } from 'vue-router';
+    // Para guardar el usuario
+    import { useAuthStore } from '../stores/authStore.js';
+    // Para llamar al backend 
+    import { default as axios } from 'axios'; 
 
-    // Flujo
-    // 1. El usuario se loggea -- Boton creado
-    // 2. Se identifica si es alumno, profesor o director de carrera -- obtenerRol()
-    //  2.1 Si es alumno debe de entregar el token y redirigirlo a su menú correspondiente 
-    //  2.2 Si es profesor debe de entregar el toekn y redirigirlo a su menú correspondiente
-    //  2.3 Si es director debe de entregar el token y redirigirlo a su menú correspondiente
-    //  2.4 Si no cumple con las condiciones anteriores manejar el error
-    // 3. Preguntar a la DB ¿El usuario existe? -- esExistente()
-    //  3.1 Si existe no hacer nada
-    //  3.2 Si no existe crear el usuario en la DB guardando el UID de firebase, nombre, correo y rol
-    // 4. Si algo falla en la autenticacion de google manejar el error
+    // Flujo 
+    // 1. El usuario se loggea -- Boton creado (Llama a loginGoogle)
+    // 2. El frontend (Vue) llama a Firebase y obtiene el UID (identificador único).
+    // 3. El frontend envía ese UID a nuestro backend (Express) al endpoint /api/auth/login.
+    // 4. El backend PREGUNTA A LA DB ¿El usuario existe? (¡La lógica de esExistente() está en el backend!)
+    // 5. El backend determina el ROL (¡La lógica de obtenerRol() está en el backend!)
+    // 6. El backend responde al frontend con los datos del usuario (incluyendo el rol).
+    // 7. El frontend guarda el usuario en Pinia (authStore) y redirige al menú correspondiente.
+    // 8. Si algo falla, se maneja el error.
+
+    const router = useRouter();
+    const authStore = useAuthStore();
+    const apiClient = axios.create({ 
+      baseURL: 'http://localhost:3000/api' 
+    });
 
     const googleProvider = new GoogleAuthProvider();
     const auth = getAuth();
 
-    // Para evitar magic strings se usa un diccionario con los tipos de roles
-    const rol_type = Object.freeze ({
-        alumno: "alu.unach.cl",
-        profesor: "unach.cl",
-        director: "dir"
-    })
+    // y los objetos 'rol_type' y 'rolDB' 
+    // ¿Por qué? Porque como dice el "Flujo Corregido", toda esa lógica
+    // de revisar el rol y la base de datos YA ESTÁ en tu backend 
+    // (en el archivo 'Backend/router/auth.js', en el endpoint '/login').
+    // No podemos tenerla en dos lugares.
 
-    const rolDB = Object.freeze ({
-        alumno: "alumno",
-        profesor: "profesor",
-        director: "director"
-    })
+    const loginGoogle = async () => {
+        try {
+            // El usuario se loggea (Paso 1 del Flujo)
+            const result = await signInWithPopup(auth, googleProvider);
+            const uid = result.user.uid; // (Paso 2 del Flujo)
 
-    function esExistente(uidUser) {
-        // Consultar a la base de datos si hay un usuario con la uid
-        // if si la consulta devuelve true no debe hacer nada
-        // if si la consulta devuelve false toma los datos del usuario y hace un insert para el registro
-        return true
-    }
+            // Llamar a nuestro backend (Paso 3, 4, 5 y 6 del Flujo)
+            // Llama al endpoint /api/auth/login que creamos en auth.js
+            const response = await apiClient.post('/auth/login', { uid });
 
-    function obtenerRol(email, nombre, uid){
-        // -- email --
-        // Separar email direccion@dominio
-        const direccion = email.split("@")[0]
-        const dominio = email.split("@")[1]
+            // Si llegamos aquí, el backend encontró al usuario en MySQL
+            const usuario = response.data; // (Contiene ID_Usuario, rol, nombre...)
 
-        // -- nombre --
-        let nombreApellido = nombre.split(" ")[0] + nombre.split(" ")[2]
-        nombreApellido = nombreApellido.toLowerCase()
+            // Guardar en Pinia y Redirigir (Paso 7 del Flujo)
+            authStore.setUser(usuario);
 
-        // Comparaciones
-        const esAlumno = dominio === rol_type.alumno && esExistente(uid) === true // && nombreApellido === direccion - no se si tiene sentido
-        const esProfesor = dominio === rol_type.profesor && esExistente(uid) === true
-        const esDirector = direccion.slice(0,3) === rol_type.director && dominio === rol_type.profesor && esExistente(uid) === true
+            if (usuario.rol === 'alumno') {
+              router.push('/alumnos');
+            } else if (usuario.rol === 'profesor') {
+              router.push('/profesor'); // (Ruta para el futuro)
+            } else if (usuario.rol === 'director') {
+              router.push('/director'); // (Ruta para el futuro)
+            } else {
+              router.push('/'); // Si hay un problema, volver al login
+            }
 
-        // Devolver
-        if (esAlumno === true){
-            // falta la redirección a el menú de alumno y retornar una variable que contenga 
-            // el rol para luego almacenarla en la base de datos con esExistente()
-            return console.log("El usuario es un estudiante")
+        } catch (error) {
+            // (Paso 8 del Flujo)
+            console.error("Error en el login:", error);
+            
+            // Manejo de errores (ej. si el usuario no está registrado)
+            if (error.response?.status === 404) {
+              // El backend nos dijo "404 - Usuario no encontrado"
+              alert("Error: Usuario no encontrado. Por favor, ve a la página de registro.");
+            } else {
+              alert("Error al iniciar sesión: " + error.message);
+            }
         }
-        
-        if(esProfesor === true){
-            return console.log("El usuario es un profesor")
-        }
-        
-        if(esDirector === true){
-            return console.log("Es un director")
-        }
-        
-        // Manejo de errores
-        if(dominio !== rol_type.alumno && dominio !== rol_type.profesor) {
-            return alert("El correo utilizado para la autenticacion no pertenece a la organización, porfavor utilice un corrreo institucional")
-        }
-
-        if (esExistente() === false){
-            return alert("Es tu primera vez en esta app, Registrate!")
-        }
-
-        else {
-            return alert("error desconocido")
-        }
-    }
-
-    const loginGoogle = () => {
-        signInWithPopup(auth, googleProvider)
-        .then((result) =>{
-            obtenerRol(result.user.email, result.user.displayName, result.user.uid)
-        })
-        .catch((error) => {
-            alert("Error al inciar sesion con google" + error)
-        })
     }
 </script>
+
 
 <template>
     <button class="" @click="loginGoogle()">Loggin con google</button>
