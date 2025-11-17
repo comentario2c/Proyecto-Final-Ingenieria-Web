@@ -3,6 +3,10 @@ import './style.css'
 import App from './App.vue'
 import router from './router/index.js'
 import { initializeApp } from 'firebase/app'
+import { createPinia } from 'pinia'
+
+const pinia = createPinia()
+const app = createApp(App)
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_APIKEY,
@@ -13,5 +17,6 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_APPID
 };
 
+app.use(pinia)
 initializeApp(firebaseConfig)
 createApp(App).use(router).mount('#app')
