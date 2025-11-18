@@ -1,11 +1,8 @@
 <script setup>
-    import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
-    // Para redirigir
-    import { useRouter } from 'vue-router';
-    // Para guardar el usuario
-    import { useAuthStore } from '../stores/authStore.js';
-    // Para llamar al backend 
-    import { default as axios } from 'axios'; 
+    import { GoogleAuthProvider, getAuth, getRedirectResult, signInWithCredential, signInWithPopup, signInWithRedirect } from 'firebase/auth';
+    import { RouterLink, useRouter } from 'vue-router';
+    import { useLoginStore } from '../store/login';
+    import { onMounted } from 'vue';
 
     // Flujo 
     // 1. El usuario se loggea -- Boton creado (Llama a loginGoogle)
@@ -25,28 +22,81 @@
 
     const googleProvider = new GoogleAuthProvider();
     const auth = getAuth();
+    const router = useRouter();
+    const loginStore = useLoginStore();
+    const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
 
-    // y los objetos 'rol_type' y 'rolDB' 
-    // ¿Por qué? Porque como dice el "Flujo Corregido", toda esa lógica
-    // de revisar el rol y la base de datos YA ESTÁ en tu backend 
-    // (en el archivo 'Backend/router/auth.js', en el endpoint '/login').
-    // No podemos tenerla en dos lugares.
+    // Para evitar magic strings se usa un diccionario con los tipos de roles
+    const rol_type = Object.freeze ({
+        alumno: "alu.unach.cl",
+        profesor: "unach.cl",
+        director: "dir"
+    })
 
-    const loginGoogle = async () => {
-        try {
-            // El usuario se loggea (Paso 1 del Flujo)
-            const result = await signInWithPopup(auth, googleProvider);
-            const uid = result.user.uid; // (Paso 2 del Flujo)
+    const rolDB = Object.freeze ({
+        alumno: "alumno",
+        profesor: "profesor",
+        director: "director"
+    })
+
+    function esExistente() {
+        // Consultar a la base de datos si hay un usuario con la uid
+        // if si la consulta devuelve true no debe hacer nada
+        // if si la consulta devuelve false toma los datos del usuario y hace un insert para el registro
+        const esExistente = fetch("")
+
+        if (esExistente === true){
+            return router.push("/alumno")
+        }
+
+        if (esExistente === false){
+            return router.push("/register")
+        }
+    }
+
+    function obtenerRol(email, nombre, uid, token){
+        // -- email --
+        // Separar email direccion@dominio
+        const direccion = email.split("@")[0]
+        const dominio = email.split("@")[1]
 
             // Llamar a nuestro backend (Paso 3, 4, 5 y 6 del Flujo)
             // Llama al endpoint /api/auth/login que creamos en auth.js
             const response = await apiClient.post('/auth/login', { uid });
 
-            // Si llegamos aquí, el backend encontró al usuario en MySQL
-            const usuario = response.data; // (Contiene ID_Usuario, rol, nombre...)
+        // Comparaciones
+        const esAlumno = dominio === rol_type.alumno // && esExistente(uid) === true // && nombreApellido === direccion - no se si tiene sentido
+        const esProfesor = dominio === rol_type.profesor && esExistente(uid) === true
+        const esDirector = direccion.slice(0,3) === rol_type.director && dominio === rol_type.profesor && esExistente(uid) === true
+        let rol = "";
+        
+        // Devolver
+        if (esAlumno === true){
+            rol = rolDB.alumno;
 
-            // Guardar en Pinia y Redirigir (Paso 7 del Flujo)
-            authStore.setUser(usuario);
+            loginStore.$patch({
+                nombre: nombre,
+                email: email,
+                uid: uid,
+                token: token,
+                rol: rol
+            })
+
+            return router.push("/register")
+        }
+        
+        if(esProfesor === true){
+            return console.log("El usuario es un profesor")
+        }
+        
+        if(esDirector === true){
+            return console.log("Es un director")
+        }
+        
+        // Manejo de errores
+        if(dominio !== rol_type.alumno && dominio !== rol_type.profesor) {
+            return alert("El correo utilizado para la autenticacion no pertenece a la organización, porfavor utilice un corrreo institucional")
+        }
 
             if (usuario.rol === 'alumno') {
               router.push('/alumnos');
@@ -71,10 +121,25 @@
             }
         }
     }
+
+    const loginGoogle = () => {
+        signInWithPopup(auth, googleProvider)
+        .then((result) =>{
+            obtenerRol(result.user.email, result.user.displayName, result.user.uid, result.user.accessToken)
+        })
+        .catch((error) => {
+            alert("Error al inciar sesion con google" + error)
+        })
+    }
 </script>
 
 
 <template>
-    <button class="" @click="loginGoogle()">Loggin con google</button>
-    <router-link class="pl-5" to="/register">¿No te haz registrado?, haz click aqui.</router-link>
+    <div class="flex flex-col items-center md:p-16 place-content-center h-screen">
+        <div class="flex flex-col items-center bg-gray-100 p-10 md:p-20 rounded-lg shadow-lg">
+            <h1 class="pb-5 text-xl md:text-3xl">Bienvenido a Control de Prestamos</h1>
+            <p class="text-xs px-4 py-2 mb-5 w-100 text-center md:w-100 sm:w-110">Registra prestamos de equipos de manera sencilla y rapida, inicia sesion con tu cuenta institucional para continuar</p>
+            <button class="bg-blue-700 text-white px-5 py-2 rounded-xl md:px-20 hover:scale-105 transition duration-300" @click="loginGoogle()"><img src="/google.svg" class="inline-block"></img> Ingresar con Google</button>
+        </div>
+    </div>
 </template>
