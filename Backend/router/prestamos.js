@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
 // Importamos el objeto 'pool' (la piscina de conexiones) de server.js
-// NOTA: Usamos './server' porque ambos archivos están al mismo nivel.
+// Usamos './server' porque ambos archivos están al mismo nivel.
 const { pool } = require('./server'); 
 
 /**
