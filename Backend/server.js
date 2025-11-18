@@ -1,0 +1,129 @@
+// server.js (debug)
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const mysql = require("mysql2/promise");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+console.log("=== INICIANDO BACKEND ===");
+console.log("ENV DB_HOST:", process.env.DB_HOST);
+console.log("ENV DB_USER:", process.env.DB_USER);
+console.log("ENV DB_NAME:", process.env.DB_NAME);
+console.log("ENV DB_PORT:", process.env.DB_PORT || 3306);
+
+// ---------------------------------------------------
+// Conexión (pool)
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASS || "",
+  database: process.env.DB_NAME || "prestamos",
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
+
+// Probar conexión una vez al inicio
+(async () => {
+  try {
+    const conn = await pool.getConnection();
+    console.log("✅ Conexión MySQL OK. ThreadId:", conn.threadId);
+    conn.release();
+  } catch (err) {
+    console.error("❌ Error al conectar MySQL (detallado):", err && err.message ? err.message : err);
+  }
+})();
+
+// ---------------------------------------------------
+// Rutas API (NOTA: rutas bajo /api/* para coincidir con frontend)
+// ---------------------------------------------------
+
+// GET /api/equipos
+app.get("/api/equipos", async (req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT ID_Equipo, modelo, numeroSerie, estado, nombreSala FROM Equipos");
+    return res.json(rows);
+  } catch (err) {
+    console.error("Error SQL GET /api/equipos:", err);
+    return res.status(500).json({ error: "Error obteniendo equipos", detail: err.message });
+  }
+});
+
+// POST /api/equipos
+app.post("/api/equipos", async (req, res) => {
+  try {
+    const { ID_Equipo, modelo, numeroSerie, estado, nombreSala } = req.body;
+    console.log("POST /api/equipos body:", { ID_Equipo, modelo, numeroSerie, estado, nombreSala });
+
+    // Validación mínima
+    if (!ID_Equipo || !modelo) {
+      return res.status(400).json({ error: "Faltan campos obligatorios: ID_Equipo o modelo" });
+    }
+
+    const sql = `INSERT INTO Equipos (ID_Equipo, modelo, numeroSerie, estado, nombreSala) VALUES (?, ?, ?, ?, ?)`;
+    const [result] = await pool.query(sql, [ID_Equipo, modelo, numeroSerie || null, estado || null, nombreSala || null]);
+    return res.json({ message: "Equipo creado correctamente", affected: result.affectedRows });
+  } catch (err) {
+    console.error("Error SQL POST /api/equipos:", err);
+    return res.status(500).json({ error: "Error creando equipo", detail: err.message });
+  }
+});
+
+// PUT /api/equipos/:id
+app.put("/api/equipos/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { modelo, numeroSerie, estado, nombreSala } = req.body;
+    const sql = `UPDATE Equipos SET modelo=?, numeroSerie=?, estado=?, nombreSala=? WHERE ID_Equipo=?`;
+    const [result] = await pool.query(sql, [modelo, numeroSerie, estado, nombreSala, id]);
+    return res.json({ message: "Equipo actualizado", affected: result.affectedRows });
+  } catch (err) {
+    console.error("Error SQL PUT /api/equipos/:id:", err);
+    return res.status(500).json({ error: "Error actualizando equipo", detail: err.message });
+  }
+});
+
+// DELETE /api/equipos/:id
+app.delete("/api/equipos/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const sql = `DELETE FROM Equipos WHERE ID_Equipo = ?`;
+    const [result] = await pool.query(sql, [id]);
+    return res.json({ message: "Equipo eliminado", affected: result.affectedRows });
+  } catch (err) {
+    console.error("Error SQL DELETE /api/equipos/:id:", err);
+    return res.status(500).json({ error: "Error eliminando equipo", detail: err.message });
+  }
+});
+
+// GET /api/salas
+app.get("/api/salas", async (req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT nombreSala, stockEquipos, descripcion FROM Sala");
+    return res.json(rows);
+  } catch (err) {
+    console.error("Error SQL GET /api/salas:", err);
+    return res.status(500).json({ error: "Error obteniendo salas", detail: err.message });
+  }
+});
+
+// POST /api/salas
+app.post("/api/salas", async (req, res) => {
+  try {
+    const { nombreSala, stockEquipos, descripcion } = req.body;
+    const sql = `INSERT INTO Sala (nombreSala, stockEquipos, descripcion) VALUES (?, ?, ?)`;
+    const [result] = await pool.query(sql, [nombreSala, stockEquipos || 0, descripcion || null]);
+    return res.json({ message: "Sala creada", affected: result.affectedRows });
+  } catch (err) {
+    console.error("Error SQL POST /api/salas:", err);
+    return res.status(500).json({ error: "Error creando sala", detail: err.message });
+  }
+});
+
+// ---------------------------------------------------
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🔥 Server listening http://localhost:${PORT}`));
