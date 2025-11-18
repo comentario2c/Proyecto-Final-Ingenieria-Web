@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
+    "@vitejs/plugin-basic-ssl": "^2.1.0",
     "firebase": "^12.5.0",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.1.17",
