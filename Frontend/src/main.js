@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import './style.css'
 import App from './App.vue'
 import router from './router/index.js'
@@ -17,6 +18,10 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_APPID
 };
 
-app.use(pinia)
-initializeApp(firebaseConfig)
-createApp(App).use(router).mount('#app')
+initializeApp(firebaseConfig);
+const app = createApp(App)
+
+app.use(createPinia()) // Activa Pinia
+app.use(router)      // Activa el Router
+
+app.mount('#app')

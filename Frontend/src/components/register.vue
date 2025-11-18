@@ -62,6 +62,7 @@
         }
     }
 </script>
+
 <template>
     <div class="flex flex-col items-center place-content-center h-screen">
 
