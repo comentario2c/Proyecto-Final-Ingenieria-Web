@@ -15,7 +15,7 @@ const router = createRouter ({
         {
             path: "/register",
             name: "register",
-            component: register
+            component: register,
         },
         {
             path: '/alumnos',
