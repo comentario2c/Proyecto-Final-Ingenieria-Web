@@ -14,7 +14,15 @@ import EquiposView from "../views/admin/EquiposView.vue";
 import SalasView from "../views/admin/SalasView.vue";
 
 
-const router = createRouter ({
+// Admin layout
+import AdminLayout from "../components/admin/AdminLayout.vue";
+
+// Admin views
+import DashboardView from "../views/admin/DashboardView.vue";
+import EquiposView from "../views/admin/EquiposView.vue";
+import SalasView from "../views/admin/SalasView.vue";
+
+const router = createRouter({
     history: createWebHistory(),
     routes:[
         {
