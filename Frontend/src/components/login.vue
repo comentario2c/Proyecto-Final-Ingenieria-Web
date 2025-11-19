@@ -1,5 +1,5 @@
 <script setup>
-    import { GoogleAuthProvider, getAuth, getRedirectResult, signInWithCredential, signInWithPopup, signInWithRedirect } from 'firebase/auth';
+    import { getRedirectResult, signInWithRedirect, GoogleAuthProvider, getAuth } from 'firebase/auth';
     import { RouterLink, useRouter } from 'vue-router';
     import { useLoginStore } from '../store/login';
     import { onMounted } from 'vue';
@@ -103,15 +103,32 @@
         }
     }
 
-    const loginGoogle = () => {
-        signInWithPopup(auth, googleProvider)
-        .then((result) =>{
-            obtenerRol(result.user.email, result.user.displayName, result.user.uid, result.user.accessToken)
-        })
-        .catch((error) => {
-            alert("Error al inciar sesion con google" + error)
-        })
+    const loginGoogle = async () => {
+        alert("click recibido")
+        try {
+            await signInWithRedirect(auth, googleProvider);
+        } catch (error) {
+            alert("Error al redirigir: " + error.message); 
+            console.error(error);
+        }
     }
+
+    onMounted(async () => {
+        alert("la app se ha montado")
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                const user = result.user;
+                console.log(user)
+                obtenerRol(user.email, user.displayName, user.uid, user.accessToken);
+            }
+            else {
+
+            }
+        } catch(error) {
+            alert("Error en la autenticacion con google: " + error.message)
+        }
+    })
 </script>
 
 <template>
@@ -119,7 +136,7 @@
         <div class="flex flex-col items-center bg-gray-100 p-10 md:p-20 rounded-lg shadow-lg">
             <h1 class="pb-5 text-xl md:text-3xl">Bienvenido a Control de Prestamos</h1>
             <p class="text-xs px-4 py-2 mb-5 w-100 text-center md:w-100 sm:w-110">Registra prestamos de equipos de manera sencilla y rapida, inicia sesion con tu cuenta institucional para continuar</p>
-            <button class="bg-blue-700 text-white px-5 py-2 rounded-xl md:px-20 hover:scale-105 transition duration-300" @click="loginGoogle()"><img src="/google.svg" class="inline-block"></img> Ingresar con Google</button>
+            <button class="bg-blue-700 text-white px-5 py-2 rounded-xl md:px-20 hover:scale-105 transition duration-300 cursor-pointer" @click="loginGoogle()"><img src="/google.svg" class="inline-block"></img> Ingresar con Google</button>
         </div>
     </div>
 </template>

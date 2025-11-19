@@ -4,9 +4,8 @@ import App from './App.vue'
 import router from './router/index.js'
 import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
-const pinia = createPinia()
-const app = createApp(App)
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_APIKEY,
@@ -14,9 +13,22 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_PROJECTID,
   storageBucket: import.meta.env.VITE_STORAGEBUCKET,
   messagingSenderId: import.meta.env.VITE_MESSAGINGSENDERID,
-  appId: import.meta.env.VITE_APPID
+  appId: import.meta.env.VITE_APPID,
 };
 
-app.use(pinia)
-initializeApp(firebaseConfig)
-createApp(App).use(router).mount('#app')
+initializeApp(firebaseConfig);
+
+
+const pinia = createPinia() 
+
+
+pinia.use(piniaPluginPersistedstate) 
+
+
+const app = createApp(App)
+
+
+app.use(pinia) // Activa Pinia
+app.use(router)
+
+app.mount('#app')
