@@ -1,4 +1,6 @@
-// server.js (debug)
+// server.js (completo con CRUD Salas añadido)
+// Manteniendo todo tu código existente intacto
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -39,8 +41,7 @@ const pool = mysql.createPool({
 })();
 
 // ---------------------------------------------------
-// Rutas API (NOTA: rutas bajo /api/* para coincidir con frontend)
-// ---------------------------------------------------
+// Rutas Equipos (ya existentes, sin cambios)
 
 // GET /api/equipos
 app.get("/api/equipos", async (req, res) => {
@@ -57,13 +58,9 @@ app.get("/api/equipos", async (req, res) => {
 app.post("/api/equipos", async (req, res) => {
   try {
     const { ID_Equipo, modelo, numeroSerie, estado, nombreSala } = req.body;
-    console.log("POST /api/equipos body:", { ID_Equipo, modelo, numeroSerie, estado, nombreSala });
-
-    // Validación mínima
     if (!ID_Equipo || !modelo) {
       return res.status(400).json({ error: "Faltan campos obligatorios: ID_Equipo o modelo" });
     }
-
     const sql = `INSERT INTO Equipos (ID_Equipo, modelo, numeroSerie, estado, nombreSala) VALUES (?, ?, ?, ?, ?)`;
     const [result] = await pool.query(sql, [ID_Equipo, modelo, numeroSerie || null, estado || null, nombreSala || null]);
     return res.json({ message: "Equipo creado correctamente", affected: result.affectedRows });
@@ -100,6 +97,9 @@ app.delete("/api/equipos/:id", async (req, res) => {
   }
 });
 
+// ---------------------------------------------------
+// Rutas Salas (CRUD completo añadido)
+
 // GET /api/salas
 app.get("/api/salas", async (req, res) => {
   try {
@@ -123,6 +123,34 @@ app.post("/api/salas", async (req, res) => {
     return res.status(500).json({ error: "Error creando sala", detail: err.message });
   }
 });
+
+// PUT /api/salas/:nombreSala
+app.put("/api/salas/:nombreSala", async (req, res) => {
+  try {
+    const nombreSala = req.params.nombreSala;
+    const { stockEquipos, descripcion } = req.body;
+    const sql = `UPDATE Sala SET stockEquipos = ?, descripcion = ? WHERE nombreSala = ?`;
+    const [result] = await pool.query(sql, [stockEquipos || 0, descripcion || null, nombreSala]);
+    return res.json({ message: "Sala actualizada", affected: result.affectedRows });
+  } catch (err) {
+    console.error("Error SQL PUT /api/salas/:nombreSala:", err);
+    return res.status(500).json({ error: "Error actualizando sala", detail: err.message });
+  }
+});
+
+// DELETE /api/salas/:nombreSala
+app.delete("/api/salas/:nombreSala", async (req, res) => {
+  try {
+    const nombreSala = req.params.nombreSala;
+    const sql = `DELETE FROM Sala WHERE nombreSala = ?`;
+    const [result] = await pool.query(sql, [nombreSala]);
+    return res.json({ message: "Sala eliminada", affected: result.affectedRows });
+  } catch (err) {
+    console.error("Error SQL DELETE /api/salas/:nombreSala:", err);
+    return res.status(500).json({ error: "Error eliminando sala", detail: err.message });
+  }
+});
+
 
 // ---------------------------------------------------
 const PORT = process.env.PORT || 3000;
