@@ -2,7 +2,7 @@
 </script>
 
 <template>
-  <main class="">
+  <main>
     <RouterView></RouterView>
   </main>
 </template>

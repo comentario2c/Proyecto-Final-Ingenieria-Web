@@ -1,5 +1,8 @@
 <script setup>
-    import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
+    import { getRedirectResult, signInWithRedirect, GoogleAuthProvider, getAuth } from 'firebase/auth';
+    import { RouterLink, useRouter } from 'vue-router';
+    import { useLoginStore } from '../store/login';
+    import { onMounted } from 'vue';
 
     // Flujo
     // 1. El usuario se loggea -- Boton creado
@@ -15,6 +18,9 @@
 
     const googleProvider = new GoogleAuthProvider();
     const auth = getAuth();
+    const router = useRouter();
+    const loginStore = useLoginStore();
+    const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
 
     // Para evitar magic strings se usa un diccionario con los tipos de roles
     const rol_type = Object.freeze ({
@@ -29,14 +35,22 @@
         director: "director"
     })
 
-    function esExistente(uidUser) {
+    function esExistente() {
         // Consultar a la base de datos si hay un usuario con la uid
         // if si la consulta devuelve true no debe hacer nada
         // if si la consulta devuelve false toma los datos del usuario y hace un insert para el registro
-        return true
+        const esExistente = fetch("")
+
+        if (esExistente === true){
+            return router.push("/alumno")
+        }
+
+        if (esExistente === false){
+            return router.push("/register")
+        }
     }
 
-    function obtenerRol(email, nombre, uid){
+    function obtenerRol(email, nombre, uid, token){
         // -- email --
         // Separar email direccion@dominio
         const direccion = email.split("@")[0]
@@ -47,15 +61,24 @@
         nombreApellido = nombreApellido.toLowerCase()
 
         // Comparaciones
-        const esAlumno = dominio === rol_type.alumno && esExistente(uid) === true // && nombreApellido === direccion - no se si tiene sentido
+        const esAlumno = dominio === rol_type.alumno // && esExistente(uid) === true // && nombreApellido === direccion - no se si tiene sentido
         const esProfesor = dominio === rol_type.profesor && esExistente(uid) === true
         const esDirector = direccion.slice(0,3) === rol_type.director && dominio === rol_type.profesor && esExistente(uid) === true
-
+        let rol = "";
+        
         // Devolver
         if (esAlumno === true){
-            // falta la redirección a el menú de alumno y retornar una variable que contenga 
-            // el rol para luego almacenarla en la base de datos con esExistente()
-            return console.log("El usuario es un estudiante")
+            rol = rolDB.alumno;
+
+            loginStore.$patch({
+                nombre: nombre,
+                email: email,
+                uid: uid,
+                token: token,
+                rol: rol
+            })
+
+            return router.push("/register")
         }
         
         if(esProfesor === true){
@@ -80,18 +103,40 @@
         }
     }
 
-    const loginGoogle = () => {
-        signInWithPopup(auth, googleProvider)
-        .then((result) =>{
-            obtenerRol(result.user.email, result.user.displayName, result.user.uid)
-        })
-        .catch((error) => {
-            alert("Error al inciar sesion con google" + error)
-        })
+    const loginGoogle = async () => {
+        alert("click recibido")
+        try {
+            await signInWithRedirect(auth, googleProvider);
+        } catch (error) {
+            alert("Error al redirigir: " + error.message); 
+            console.error(error);
+        }
     }
+
+    onMounted(async () => {
+        alert("la app se ha montado")
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                const user = result.user;
+                console.log(user)
+                obtenerRol(user.email, user.displayName, user.uid, user.accessToken);
+            }
+            else {
+
+            }
+        } catch(error) {
+            alert("Error en la autenticacion con google: " + error.message)
+        }
+    })
 </script>
 
 <template>
-    <button class="" @click="loginGoogle()">Loggin con google</button>
-    <router-link class="pl-5" to="/register">¿No te haz registrado?, haz click aqui.</router-link>
+    <div class="flex flex-col items-center md:p-16 place-content-center h-screen">
+        <div class="flex flex-col items-center bg-gray-100 p-10 md:p-20 rounded-lg shadow-lg">
+            <h1 class="pb-5 text-xl md:text-3xl">Bienvenido a Control de Prestamos</h1>
+            <p class="text-xs px-4 py-2 mb-5 w-100 text-center md:w-100 sm:w-110">Registra prestamos de equipos de manera sencilla y rapida, inicia sesion con tu cuenta institucional para continuar</p>
+            <button class="bg-blue-700 text-white px-5 py-2 rounded-xl md:px-20 hover:scale-105 transition duration-300 cursor-pointer" @click="loginGoogle()"><img src="/google.svg" class="inline-block"></img> Ingresar con Google</button>
+        </div>
+    </div>
 </template>

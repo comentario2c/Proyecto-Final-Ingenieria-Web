@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 // Auth components
 import login from "../components/login.vue";
 import register from "../components/register.vue";
+import Alumnos from '../views/Alumnos/Alumnos.vue';
 
 // Admin layout
 import AdminLayout from "../components/admin/AdminLayout.vue";
@@ -12,48 +13,55 @@ import DashboardView from "../views/admin/DashboardView.vue";
 import EquiposView from "../views/admin/EquiposView.vue";
 import SalasView from "../views/admin/SalasView.vue";
 
-const routes = [
-    // LOGIN
-    {
-        path: "/",
-        name: "login",
-        component: login,
-    },
 
-    // REGISTER
-    {
-        path: "/register",
-        name: "register",
-        component: register,
-    },
+// Admin layout
+import AdminLayout from "../components/admin/AdminLayout.vue";
 
-    // ADMIN AREA
-    {
-        path: "/admin",
-        component: AdminLayout,
-        children: [
-            {
-                path: "",
-                name: "admin-dashboard",
-                component: DashboardView, // <<--- SE VE CUANDO ENTRAS A /admin
-            },
-            {
-                path: "equipos",
-                name: "admin-equipos",
-                component: EquiposView,
-            },
-            {
-                path: "salas",
-                name: "admin-salas",
-                component: SalasView,
-            }
-        ],
-    },
-];
+// Admin views
+import DashboardView from "../views/admin/DashboardView.vue";
+import EquiposView from "../views/admin/EquiposView.vue";
+import SalasView from "../views/admin/SalasView.vue";
 
 const router = createRouter({
     history: createWebHistory(),
-    routes,
-});
+    routes:[
+        {
+            path: "/login",
+            name: "login",
+            component: login
+        },
+        {
+            path: "/register",
+            name: "register",
+            component: register,
+        },
+        {
+            path: "/",
+            name: "alumnos",
+            component: Alumnos
+        },
+        {
+            path: "/admin",
+            component: AdminLayout,
+            children: [
+                {
+                path: "",
+                name: "admin-dashboard",
+                component: DashboardView,
+                },
+                {
+                    path: "equipos",
+                    name: "admin-equipos",
+                    component: EquiposView,
+                },
+                {
+                    path: "salas",
+                    name: "admin-salas",
+                    component: SalasView,
+                }
+            ]
+        }
+    ],
+})
 
-export default router;
+export default router
