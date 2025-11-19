@@ -1,34 +1,14 @@
 <script setup>
-// Hook para "cuando la página carga"
+// --- Importación de Herramientas ---
 import { onMounted } from 'vue'
-// Para redirigir al usuario
 import { useRouter } from 'vue-router'
-// Para cerrar sesión de Google
 import { getAuth, signOut } from "firebase/auth";
 // "Cerebro" de los préstamos
 import { usePrestamosStore } from '../../stores/prestamosStore.js'
- // "Cerebro" del usuario
+// "Cerebro" del usuario
 import { useAuthStore } from '../../stores/authStore.js'
 
-// Flujo de la Página de Alumno
-// 1. La página se carga (el componente se "monta").
-// 2. Se activa el hook 'onMounted'.
-// 3. Se revisa el 'authStore' (Pinia) para ver si hay un usuario logueado.
-//    3.1 Si NO hay usuario (ej. recargó la página o entró por URL), se le "patea" al login ('/').
-//    3.2 Si SÍ hay usuario, se obtiene su ID_Usuario.
-// 4. Se llama a la acción 'prestamosStore.fetchMisPrestamos(ID_Usuario)'.
-//    4.1 El 'prestamosStore' llama al backend (GET /api/prestamos/usuario/...).
-//    4.2 El backend devuelve la lista de préstamos SÓLO de ese usuario.
-//    4.3 El 'prestamosStore' guarda esa lista en su 'state'.
-// 5. El template (HTML) reacciona automáticamente y muestra la lista (v-for).
-//    5.1 Si la lista está vacía, muestra el mensaje "No tienes préstamos...".
-// 6. El usuario puede hacer clic en "Cerrar Sesión" en cualquier momento.
-//    6.1 Se llama a la función 'handleLogout'.
-//    6.2 Se cierra la sesión en Firebase (signOut).
-//    6.3 Se limpia el 'authStore' (borra los datos del usuario).
-//    6.4 Se redirige al login ('/').
-
-// Inicialización de Herramientas 
+// --- Inicialización de Herramientas ---
 const prestamosStore = usePrestamosStore() // Instancia del store de préstamos
 const authStore = useAuthStore() // Instancia del store de autenticación
 const router = useRouter() // Instancia del router
@@ -37,18 +17,25 @@ const auth = getAuth() // Instancia de Firebase Auth
 /**
  * @nombre onMounted
  * @desc Se ejecuta una vez que el componente se ha cargado en la página.
- * Su trabajo es verificar la sesión y cargar los datos iniciales.
  */
 onMounted(async () => {
-  // Revisar el authStore
-  if (authStore.usuario?.ID_Usuario) {
-    // si hay un usuario, buscar sus préstamos
-    await prestamosStore.fetchMisPrestamos(authStore.usuario.ID_Usuario)
-  } else {
-    // No hay usuario, proteger la ruta
-    router.push('/')
-  }
-})
+    // --- 1. LOGUEAMOS EL OBJETO COMPLETO ---
+    // Esto mostrará la estructura exacta de las llaves que recibimos del Backend.
+    console.log("DEBUG: Objeto de Usuario Persistente:", authStore.usuario); 
+
+    // La lógica de acceso al ID (la que estamos depurando)
+    const userID = authStore.usuario?.ID_Usuario || authStore.usuario?.uid; 
+    
+    console.log("DEBUG: ID ACCEDIDO:", userID);
+    // ---------------------------------------------
+
+    // Si el objeto está vacío, redirigimos, si no, intentamos cargar.
+    if (userID) { 
+        await prestamosStore.fetchMisPrestamos(userID); 
+    } else {
+        router.push('/');
+    }
+});
 
 /**
  * @nombre handleLogout

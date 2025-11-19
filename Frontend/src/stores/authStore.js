@@ -9,10 +9,10 @@ import { ref } from 'vue'
 // 1. La aplicación se inicia. El 'state' (usuario) es 'null' (nadie logueado).
 // 2. El usuario va a 'login.vue' o 'register.vue'.
 // 3. Después de un login/registro exitoso (con Google + nuestro Backend),
-//    el componente de Vue llama a la acción 'setUser(datosUsuario)'.
+//     el componente de Vue llama a la acción 'setUser(datosUsuario)'.
 // 4. El 'state' de 'usuario' ahora tiene los datos (ej. { rol: 'alumno', ... }).
 // 5. TODOS los demás componentes (como Alumnos.vue o un Navbar)
-//    pueden "mirar" este store para saber quién está conectado y reaccionar.
+//     pueden "mirar" este store para saber quién está conectado y reaccionar.
 // 6. El usuario hace clic en "Cerrar Sesión".
 // 7. Se llama a la acción 'clearUser()'.
 // 8. El 'state' de 'usuario' vuelve a ser 'null', y la app lo redirige al login.
@@ -32,8 +32,6 @@ export const useAuthStore = defineStore('auth', () => {
   const usuario = ref(null)
 
   // ACTIONS (Las Acciones o "Funciones") 
-  // Las "actions" son las únicas funciones que pueden modificar el 'state'.
-  
   /**
    * @nombre setUser
    * @desc Guarda los datos del usuario en el state.
@@ -68,4 +66,8 @@ export const useAuthStore = defineStore('auth', () => {
     setUser, 
     clearUser 
   }
-})
+}, {
+    // --- ¡AQUÍ ESTÁ EL CAMBIO FINAL! ---
+    // Le dice a Pinia que guarde este store en el LocalStorage del navegador
+    persist: true, 
+});
