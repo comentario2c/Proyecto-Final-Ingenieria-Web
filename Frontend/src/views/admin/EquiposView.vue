@@ -71,7 +71,7 @@ const mostrarModal = ref(false)
 const equipoSeleccionado = ref(null)
 
 // Cargar datos de ejemplo
-const API_URL = 'http://localhost:3000/api/equipos' // cambia al puerto de tu backend
+const API_URL = import.meta.env.VITE_API_URL + '/equipos' // cambia al puerto de tu backend
 
 onMounted(async () => {
   await cargarEquipos()

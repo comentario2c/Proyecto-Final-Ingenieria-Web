@@ -19,7 +19,7 @@ import { default as axios } from 'axios'
 // base de nuestro backend. Así no tenemos que escribir
 // 'http://localhost:3000/api' en cada llamada.
 const apiClient = axios.create({ 
-  baseURL: 'http://localhost:3000/api' 
+  baseURL: import.meta.env.VITE_API_URL
 });
 
 // Definición del Store 
