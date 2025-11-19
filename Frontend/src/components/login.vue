@@ -1,24 +1,20 @@
 <script setup>
-    import { GoogleAuthProvider, getAuth, getRedirectResult, signInWithCredential, signInWithPopup, signInWithRedirect } from 'firebase/auth';
+    import { getRedirectResult, signInWithRedirect, GoogleAuthProvider, getAuth } from 'firebase/auth';
     import { RouterLink, useRouter } from 'vue-router';
     import { useLoginStore } from '../store/login';
     import { onMounted } from 'vue';
 
-    // Flujo 
-    // 1. El usuario se loggea -- Boton creado (Llama a loginGoogle)
-    // 2. El frontend (Vue) llama a Firebase y obtiene el UID (identificador único).
-    // 3. El frontend envía ese UID a nuestro backend (Express) al endpoint /api/auth/login.
-    // 4. El backend PREGUNTA A LA DB ¿El usuario existe? (¡La lógica de esExistente() está en el backend!)
-    // 5. El backend determina el ROL (¡La lógica de obtenerRol() está en el backend!)
-    // 6. El backend responde al frontend con los datos del usuario (incluyendo el rol).
-    // 7. El frontend guarda el usuario en Pinia (authStore) y redirige al menú correspondiente.
-    // 8. Si algo falla, se maneja el error.
-
-    const router = useRouter();
-    const authStore = useAuthStore();
-    const apiClient = axios.create({ 
-      baseURL: 'http://localhost:3000/api' 
-    });
+    // Flujo
+    // 1. El usuario se loggea -- Boton creado
+    // 2. Se identifica si es alumno, profesor o director de carrera -- obtenerRol()
+    //  2.1 Si es alumno debe de entregar el token y redirigirlo a su menú correspondiente 
+    //  2.2 Si es profesor debe de entregar el toekn y redirigirlo a su menú correspondiente
+    //  2.3 Si es director debe de entregar el token y redirigirlo a su menú correspondiente
+    //  2.4 Si no cumple con las condiciones anteriores manejar el error
+    // 3. Preguntar a la DB ¿El usuario existe? -- esExistente()
+    //  3.1 Si existe no hacer nada
+    //  3.2 Si no existe crear el usuario en la DB guardando el UID de firebase, nombre, correo y rol
+    // 4. Si algo falla en la autenticacion de google manejar el error
 
     const googleProvider = new GoogleAuthProvider();
     const auth = getAuth();
@@ -60,9 +56,9 @@
         const direccion = email.split("@")[0]
         const dominio = email.split("@")[1]
 
-            // Llamar a nuestro backend (Paso 3, 4, 5 y 6 del Flujo)
-            // Llama al endpoint /api/auth/login que creamos en auth.js
-            const response = await apiClient.post('/auth/login', { uid });
+        // -- nombre --
+        let nombreApellido = nombre.split(" ")[0] + nombre.split(" ")[2]
+        nombreApellido = nombreApellido.toLowerCase()
 
         // Comparaciones
         const esAlumno = dominio === rol_type.alumno // && esExistente(uid) === true // && nombreApellido === direccion - no se si tiene sentido
@@ -98,48 +94,49 @@
             return alert("El correo utilizado para la autenticacion no pertenece a la organización, porfavor utilice un corrreo institucional")
         }
 
-            if (usuario.rol === 'alumno') {
-              router.push('/alumnos');
-            } else if (usuario.rol === 'profesor') {
-              router.push('/profesor'); // (Ruta para el futuro)
-            } else if (usuario.rol === 'director') {
-              router.push('/director'); // (Ruta para el futuro)
-            } else {
-              router.push('/'); // Si hay un problema, volver al login
-            }
+        if (esExistente() === false){
+            return alert("Es tu primera vez en esta app, Registrate!")
+        }
 
-        } catch (error) {
-            // (Paso 8 del Flujo)
-            console.error("Error en el login:", error);
-            
-            // Manejo de errores (ej. si el usuario no está registrado)
-            if (error.response?.status === 404) {
-              // El backend nos dijo "404 - Usuario no encontrado"
-              alert("Error: Usuario no encontrado. Por favor, ve a la página de registro.");
-            } else {
-              alert("Error al iniciar sesión: " + error.message);
-            }
+        else {
+            return alert("error desconocido")
         }
     }
 
-    const loginGoogle = () => {
-        signInWithPopup(auth, googleProvider)
-        .then((result) =>{
-            obtenerRol(result.user.email, result.user.displayName, result.user.uid, result.user.accessToken)
-        })
-        .catch((error) => {
-            alert("Error al inciar sesion con google" + error)
-        })
+    const loginGoogle = async () => {
+        alert("click recibido")
+        try {
+            await signInWithRedirect(auth, googleProvider);
+        } catch (error) {
+            alert("Error al redirigir: " + error.message); 
+            console.error(error);
+        }
     }
-</script>
 
+    onMounted(async () => {
+        alert("la app se ha montado")
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                const user = result.user;
+                console.log(user)
+                obtenerRol(user.email, user.displayName, user.uid, user.accessToken);
+            }
+            else {
+
+            }
+        } catch(error) {
+            alert("Error en la autenticacion con google: " + error.message)
+        }
+    })
+</script>
 
 <template>
     <div class="flex flex-col items-center md:p-16 place-content-center h-screen">
         <div class="flex flex-col items-center bg-gray-100 p-10 md:p-20 rounded-lg shadow-lg">
             <h1 class="pb-5 text-xl md:text-3xl">Bienvenido a Control de Prestamos</h1>
             <p class="text-xs px-4 py-2 mb-5 w-100 text-center md:w-100 sm:w-110">Registra prestamos de equipos de manera sencilla y rapida, inicia sesion con tu cuenta institucional para continuar</p>
-            <button class="bg-blue-700 text-white px-5 py-2 rounded-xl md:px-20 hover:scale-105 transition duration-300" @click="loginGoogle()"><img src="/google.svg" class="inline-block"></img> Ingresar con Google</button>
+            <button class="bg-blue-700 text-white px-5 py-2 rounded-xl md:px-20 hover:scale-105 transition duration-300 cursor-pointer" @click="loginGoogle()"><img src="/google.svg" class="inline-block"></img> Ingresar con Google</button>
         </div>
     </div>
 </template>

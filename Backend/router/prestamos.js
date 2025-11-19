@@ -2,9 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
-// Importamos el objeto 'pool' (la piscina de conexiones) de server.js
-// Usamos './server' porque ambos archivos están al mismo nivel.
-const { pool } = require('./server'); 
+// Usamos '../server' para subir un nivel y encontrar el Pool
+const { pool } = require('../server');
 
 /**
  * @route   GET /api/prestamos/usuario/:id_usuario

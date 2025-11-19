@@ -1,5 +1,3 @@
-
-
 // Busca un archivo llamado '.env' en la raíz y carga sus valores.
 require('dotenv').config(); 
 
