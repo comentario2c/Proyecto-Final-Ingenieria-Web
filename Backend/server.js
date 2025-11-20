@@ -5,6 +5,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2/promise");
+const db = require("./db");
 
 const app = express();
 app.use(cors());
@@ -150,6 +151,10 @@ app.delete("/api/salas/:nombreSala", async (req, res) => {
     return res.status(500).json({ error: "Error eliminando sala", detail: err.message });
   }
 });
+
+// Luciano
+const authRoutes = require("./router/authRoutes");
+app.use("/api/auth", authRoutes);
 
 
 // ---------------------------------------------------
