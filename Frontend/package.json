@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
+    "@teckel/vue-barcode-reader": "^1.1.8",
     "@vitejs/plugin-basic-ssl": "^2.1.0",
     "axios": "^1.13.2",
     "firebase": "^12.5.0",

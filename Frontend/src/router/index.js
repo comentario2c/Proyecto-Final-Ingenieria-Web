@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import login from "../components/login.vue";
 import register from "../components/register.vue";
 import Alumnos from '../views/Alumnos/Alumnos.vue';
+import profesor from "../components/profesor.vue";
 
 // Admin layout
 import AdminLayout from "../components/admin/AdminLayout.vue";
@@ -30,6 +31,11 @@ const router = createRouter({
             path: "/",
             name: "alumnos",
             component: Alumnos
+        },
+        {
+            path: "/profesores",
+            name: "profesores",
+            component: profesor
         },
         {
             path: "/admin",

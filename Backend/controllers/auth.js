@@ -2,8 +2,8 @@ const dbConfig = require('../db');
 const db = dbConfig;
 
 const rol_db = {
-    alumno: alumno,
-    profesor: profesor,
+    alumno: "alumno",
+    profesor: "profesor",
 }
 
 const dominio_db = {
