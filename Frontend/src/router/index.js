@@ -14,6 +14,8 @@ import DashboardView from "../views/admin/DashboardView.vue";
 import EquiposView from "../views/admin/EquiposView.vue";
 import SalasView from "../views/admin/SalasView.vue";
 
+import scan from "../components/scaner.vue"
+
 const router = createRouter({
     history: createWebHistory(),
     routes:[
@@ -31,6 +33,11 @@ const router = createRouter({
             path: "/",
             name: "alumnos",
             component: Alumnos
+        },
+        {
+            path: "/scan",
+            name: "scan",
+            component: scan
         },
         {
             path: "/profesores",
