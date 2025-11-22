@@ -1,7 +1,7 @@
 <script setup>
     import { getRedirectResult, signInWithRedirect, GoogleAuthProvider, getAuth } from 'firebase/auth';
     import { RouterLink, useRouter } from 'vue-router';
-    import { useLoginStore } from '../store/login';
+    import { useLoginStore } from '../stores/login';
     import { onMounted } from 'vue';
 
     // Flujo

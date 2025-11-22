@@ -24,6 +24,7 @@ const resultText = ref(""); // respuesta de la lectura
 let cvRouter = null;
 let cameraEnhancer = null;
 let isDestroyed = false; // cerrar camara
+const emit = defineEmits(['code-detected']);
 
 // sacado de un ejemplo de la docuemntacion
 onMounted(async () => {
@@ -46,7 +47,10 @@ onMounted(async () => {
     // Define a callback for results.
     cvRouter.addResultReceiver({
       onDecodedBarcodesReceived: (result) => {
-        if (!result.barcodeResultItems.length) return;
+        if (!result.barcodeResultItems.length > 0) return;
+
+        const code = result.barcodeResultItems[0].text;
+        emit('code-detected', code);
 
         resultText.value = '';
         console.log(result);
@@ -82,9 +86,6 @@ onMounted(async () => {
       alert(errMsg);
     }
   }
-
-  // Resolve pInit promise once initialization is complete.
-  resolveInit!();
 });
 
 onBeforeUnmount(async () => {

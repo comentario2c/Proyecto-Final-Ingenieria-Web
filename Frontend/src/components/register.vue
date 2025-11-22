@@ -1,5 +1,5 @@
 <script setup>
-    import { useLoginStore } from '../store/login';
+    import { useLoginStore } from '../stores/login';
     import { useRouter } from 'vue-router';
     import { ref } from 'vue';
 
