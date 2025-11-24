@@ -1,5 +1,4 @@
-const dbConfig = require('../db');
-const db = dbConfig;
+const db = require('../db');
 
 const rol_db = {
     alumno: "alumno",

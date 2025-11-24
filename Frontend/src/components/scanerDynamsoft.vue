@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { onMounted, onBeforeUnmount, ref } from "vue";
 import { CoreModule, LicenseManager, CameraEnhancer, CameraView, CaptureVisionRouter, MultiFrameResultCrossFilter } from "dynamsoft-barcode-reader-bundle";
 
@@ -25,6 +25,9 @@ let cvRouter = null;
 let cameraEnhancer = null;
 let isDestroyed = false; // cerrar camara
 const emit = defineEmits(['code-detected']);
+let resolveInit;
+const pInit = new Promise(r => { resolveInit = r });
+const componentDestroyedErrorMsg = "VideoCapture Component Destroyed";
 
 // sacado de un ejemplo de la docuemntacion
 onMounted(async () => {
@@ -37,7 +40,7 @@ onMounted(async () => {
     if (isDestroyed) { throw Error(componentDestroyedErrorMsg); }
 
     // Get default UI and append it to DOM.
-    cameraViewContainer.value!.append(cameraView.getUIElement());
+    cameraViewContainer.value?.append(cameraView.getUIElement());
 
     // Create a `CaptureVisionRouter` instance and set `CameraEnhancer` instance as its image source.
     cvRouter = await CaptureVisionRouter.createInstance();
@@ -54,7 +57,7 @@ onMounted(async () => {
 
         resultText.value = '';
         console.log(result);
-        for (let item of result.barcodeResultItems) {
+        for (const item of result.barcodeResultItems) {
           resultText.value += `${item.formatString}: ${item.text}\n\n`;
         }
       }
@@ -78,14 +81,15 @@ onMounted(async () => {
 
   } catch (ex) {
 
-    if ((ex as Error)?.message === componentDestroyedErrorMsg) {
+    if ((ex)?.message === componentDestroyedErrorMsg) {
       console.log(componentDestroyedErrorMsg);
     } else {
-      let errMsg = ex.message || ex;
+      const errMsg = ex.message || ex;
       console.error(ex);
       alert(errMsg);
     }
   }
+  resolveInit();
 });
 
 onBeforeUnmount(async () => {
@@ -94,7 +98,9 @@ onBeforeUnmount(async () => {
     await pInit; // Wait for the pInit to complete before disposing resources.
     cvRouter?.dispose();
     cameraEnhancer?.dispose();
-  } catch (_) { }
+  } catch (_) {
+    console.log(_)
+   }
 });
 </script>
 

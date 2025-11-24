@@ -5,6 +5,7 @@ export const useScanStore = defineStore('scan', () => {
   // Guardar temporalmente los datos
   const rutUsuario = ref('');
   const idEquipo = ref('');
+  const idDevolucion = ref('');
 
   // controlar el scanner
   const mostrarScanner = ref(false);
@@ -22,6 +23,8 @@ export const useScanStore = defineStore('scan', () => {
       rutUsuario.value = codigo;
     } else if (campoObjetivo.value === 'equipo') {
       idEquipo.value = codigo;
+    } else if (campoObjetivo.value === 'devolucion') {
+      idDevolucion.value = codigo;
     }
     
     cerrarScanner();
@@ -37,11 +40,13 @@ export const useScanStore = defineStore('scan', () => {
   function resetForm() {
     rutUsuario.value = '';
     idEquipo.value = '';
+    idDevolucion.value = '';
   }
 
   return { 
     rutUsuario, 
-    idEquipo, 
+    idEquipo,
+    idDevolucion, 
     mostrarScanner, 
     campoObjetivo,
     abrirScanner, 

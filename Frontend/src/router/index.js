@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 // Auth components
-import login from "../components/login.vue";
-import register from "../components/register.vue";
+import login from "../components/loginGoogle.vue";
+import register from "../components/registerRut.vue";
 import Alumnos from '../views/Alumnos/Alumnos.vue';
-import profesor from "../components/profesor.vue";
+import profesor from "../components/profesorPrestamo.vue";
 
 // Admin layout
 import AdminLayout from "../components/admin/AdminLayout.vue";
@@ -13,8 +13,6 @@ import AdminLayout from "../components/admin/AdminLayout.vue";
 import DashboardView from "../views/admin/DashboardView.vue";
 import EquiposView from "../views/admin/EquiposView.vue";
 import SalasView from "../views/admin/SalasView.vue";
-
-import scan from "../components/scaner.vue"
 
 const router = createRouter({
     history: createWebHistory(),
@@ -35,13 +33,8 @@ const router = createRouter({
             component: Alumnos
         },
         {
-            path: "/scan",
-            name: "scan",
-            component: scan
-        },
-        {
             path: "/profesores",
-            name: "profesores",
+            name: "profesoresPrestamo",
             component: profesor
         },
         {

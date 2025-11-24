@@ -15,7 +15,7 @@
         <textarea v-model="form.descripcion" class="w-full border rounded p-1"></textarea>
       </div>
       <div class="flex justify-end mt-3">
-        <button type="button" @click="$emit('cerrar')" class="mr-2 px-4 py-2 bg-gray-300 rounded">Cancelar</button>
+        <button type="button" class="mr-2 px-4 py-2 bg-gray-300 rounded" @click="$emit('cerrar')">Cancelar</button>
         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
       </div>
     </form>

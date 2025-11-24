@@ -1,6 +1,6 @@
 <script setup>
   import { useScanStore } from '../stores/scanStore';
-  import Scaner from './Scaner.vue'; // Componente hijo
+  import Scaner from './scanerDynamsoft.vue'; // Componente hijo
 
   const store = useScanStore();
 
@@ -15,11 +15,21 @@
     alert(`Enviando Préstamo:\nRUT: ${store.rutUsuario}\nEquipo: ${store.idEquipo}`);
     store.resetForm();
   };
+
+  async function enviarDevolucion() {
+    if (!store.idDevolucion) {
+      alert("Faltan datos");
+      return;
+    }
+    
+    // aviso al usuario del envio de datos
+    alert(`Enviando Devolución:\nID: ${store.idDevolucion}`);
+    store.resetForm();
+  }
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-    
     <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-6">
       <h1 class="text-2xl font-bold text-gray-800 text-center">Nuevo Préstamo</h1>
 
@@ -27,16 +37,16 @@
         <label class="block text-sm font-medium text-gray-700">Identificación Usuario (RUT)</label>
         <div class="flex gap-2">
           <input 
-            type="text" 
             v-model="store.rutUsuario" 
+            type="text" 
             required
-            placeholder="Ej: 12345678-9"
+            placeholder="123456789"
             class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition"
           />
           <button 
-            @click="store.abrirScanner('rut')"
             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
             title="Escanear RUT"
+            @click="store.abrirScanner('rut')"
           >
           <!-- svg obtenidos de fonts.google -->
           <img src="/camara.svg" /> 
@@ -48,16 +58,16 @@
         <label class="block text-sm font-medium text-gray-700">Código del Equipo</label>
         <div class="flex gap-2">
           <input 
-            type="text" 
             v-model="store.idEquipo" 
+            type="text" 
             required
-            placeholder="Ej: PC-LAB-04"
+            placeholder="PC-LAB-04"
             class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none transition"
           />
           <button 
-            @click="store.abrirScanner('equipo')"
             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
             title="Escanear Equipo"
+            @click="store.abrirScanner('equipo')"
           >
           <!-- svg obtenidos de fonts.google -->
           <img src="/camara.svg" />
@@ -66,10 +76,38 @@
       </div>
 
       <button 
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transition active:scale-95"
         @click="enviarPrestamo"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transition active:scale-95 mt-4"
       >
         Registrar Préstamo
+      </button>
+
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700 mt-5">Código del Equipo</label>
+        <div class="flex gap-2">
+          <input 
+            v-model="store.idDevolucion" 
+            type="text" 
+            required
+            placeholder="PC-LAB-04"
+            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition"
+          />
+          <button 
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
+            title="Escanear Equipo"
+            @click="store.abrirScanner('devolucion')"
+          >
+          <!-- svg obtenidos de fonts.google -->
+          <img src="/camara.svg" />
+          </button>
+        </div>
+      </div>
+
+      <button 
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transition active:scale-95"
+        @click="enviarDevolucion()"
+        >
+        Devolución
       </button>
 
     </div>
@@ -77,8 +115,8 @@
     <div v-if="store.mostrarScanner" class="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center">
       
       <button 
-        @click="store.cerrarScanner"
         class="absolute top-4 right-4 text-white bg-red-600 hover:bg-red-700 rounded-full p-2 z-50"
+        @click="store.cerrarScanner"
       >
         <!-- svg obtenidos de fonts.google -->
         <img src="/cerrar.svg" />

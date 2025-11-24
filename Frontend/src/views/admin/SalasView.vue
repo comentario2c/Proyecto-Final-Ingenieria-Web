@@ -2,7 +2,7 @@
   <div class="p-6">
     <h1 class="text-2xl font-semibold mb-4">Gestión de Salas</h1>
 
-    <button @click="abrirModal(null)" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" @click="abrirModal(null)">
       + Nueva Sala
     </button>
 
@@ -21,8 +21,8 @@
           <td class="border px-3 py-2">{{ sala.stockEquipos }}</td>
           <td class="border px-3 py-2">{{ sala.descripcion }}</td>
           <td class="border px-3 py-2 text-center">
-            <button @click="abrirModal(sala)" class="text-blue-600 hover:underline">Editar</button>
-            <button @click="eliminarSala(sala.nombreSala)" class="text-red-600 hover:underline ml-2">Eliminar</button>
+            <button class="text-blue-600 hover:underline" @click="abrirModal(sala)">Editar</button>
+            <button class="text-red-600 hover:underline ml-2" @click="eliminarSala(sala.nombreSala)">Eliminar</button>
           </td>
         </tr>
       </tbody>

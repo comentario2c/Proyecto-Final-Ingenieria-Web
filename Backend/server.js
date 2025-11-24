@@ -156,7 +156,8 @@ app.delete("/api/salas/:nombreSala", async (req, res) => {
 const authRoutes = require("./router/authRoutes");
 app.use("/api/auth", authRoutes);
 
-
+const prestamosRoutes = require("./router/prestamoRoutes");
+app.use("/api/prestamos", prestamosRoutes);
 // ---------------------------------------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Server listening http://localhost:${PORT}`));
