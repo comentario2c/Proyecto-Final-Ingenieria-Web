@@ -4,7 +4,7 @@ import { CoreModule, LicenseManager, CameraEnhancer, CameraView, CaptureVisionRo
 
 // ruta localhost:5173/dbr/dynamsoft-barcode-reader-bundle@11.2.4000 
 // la ruta no deberia ser esa pero desconozco la razon del porque fuerza esa ruta
-const resourcesPath = window.location.origin + "/dbr/";
+const resourcesPath = "https://cdn.jsdelivr.net/npm/";
 
 // Archivos necesarios para el lector 
 CoreModule.engineResourcePaths = {
