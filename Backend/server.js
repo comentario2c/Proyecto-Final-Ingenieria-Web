@@ -5,6 +5,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2/promise");
+const db = require("./db");
 
 const app = express();
 app.use(cors());
@@ -151,7 +152,12 @@ app.delete("/api/salas/:nombreSala", async (req, res) => {
   }
 });
 
+// Luciano
+const authRoutes = require("./router/authRoutes");
+app.use("/api/auth", authRoutes);
 
+const prestamosRoutes = require("./router/prestamoRoutes");
+app.use("/api/prestamos", prestamosRoutes);
 // ---------------------------------------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Server listening http://localhost:${PORT}`));

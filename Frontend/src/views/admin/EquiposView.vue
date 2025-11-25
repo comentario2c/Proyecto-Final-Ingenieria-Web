@@ -4,8 +4,8 @@
 
     <!-- Botón para agregar -->
     <button
-      @click="abrirModal(null)"
       class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+      @click="abrirModal(null)"
     >
       + Nuevo Equipo
     </button>
@@ -30,8 +30,8 @@
           <td class="border px-3 py-2">{{ equipo.estado }}</td>
           <td class="border px-3 py-2">{{ equipo.nombreSala }}</td>
           <td class="border px-3 py-2 text-center">
-            <button @click="abrirModal(equipo)" class="text-blue-600 hover:underline">Editar</button>
-            <button @click="eliminarEquipo(equipo.ID_Equipo)" class="text-red-600 hover:underline ml-3">Eliminar</button>
+            <button class="text-blue-600 hover:underline" @click="abrirModal(equipo)">Editar</button>
+            <button class="text-red-600 hover:underline ml-3" @click="eliminarEquipo(equipo.ID_Equipo)">Eliminar</button>
           </td>
         </tr>
       </tbody>
@@ -71,7 +71,7 @@ const mostrarModal = ref(false)
 const equipoSeleccionado = ref(null)
 
 // Cargar datos de ejemplo
-const API_URL = 'http://localhost:3000/api/equipos' // cambia al puerto de tu backend
+const API_URL = import.meta.env.VITE_API_URL + '/equipos' // cambia al puerto de tu backend
 
 onMounted(async () => {
   await cargarEquipos()

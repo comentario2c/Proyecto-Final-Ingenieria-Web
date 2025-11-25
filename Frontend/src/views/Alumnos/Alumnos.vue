@@ -1,14 +1,11 @@
 <script setup>
-// --- Importación de Herramientas ---
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAuth, signOut } from "firebase/auth";
-// "Cerebro" de los préstamos
 import { usePrestamosStore } from '../../stores/prestamosStore.js'
-// "Cerebro" del usuario
 import { useAuthStore } from '../../stores/authStore.js'
 
-// --- Inicialización de Herramientas ---
+// Inicialización de Herramientas 
 const prestamosStore = usePrestamosStore() // Instancia del store de préstamos
 const authStore = useAuthStore() // Instancia del store de autenticación
 const router = useRouter() // Instancia del router
@@ -19,23 +16,20 @@ const auth = getAuth() // Instancia de Firebase Auth
  * @desc Se ejecuta una vez que el componente se ha cargado en la página.
  */
 onMounted(async () => {
-    // --- 1. LOGUEAMOS EL OBJETO COMPLETO ---
-    // Esto mostrará la estructura exacta de las llaves que recibimos del Backend.
-    console.log("DEBUG: Objeto de Usuario Persistente:", authStore.usuario); 
+  // 1. Obtener el ID del Store de forma robusta
+  const userID = authStore.usuario?.ID_Usuario || authStore.usuario?.uid; 
 
-    // La lógica de acceso al ID (la que estamos depurando)
-    const userID = authStore.usuario?.ID_Usuario || authStore.usuario?.uid; 
-    
-    console.log("DEBUG: ID ACCEDIDO:", userID);
-    // ---------------------------------------------
+  // Línea de debugging
+  console.log("UserID del Store para buscar préstamos:", userID); 
 
-    // Si el objeto está vacío, redirigimos, si no, intentamos cargar.
-    if (userID) { 
-        await prestamosStore.fetchMisPrestamos(userID); 
-    } else {
-        router.push('/');
-    }
-});
+  if (userID) { 
+    // 2. Si hay ID, buscar préstamos
+    await prestamosStore.fetchMisPrestamos(userID); 
+  } else {
+    // 3. Si no hay ID, redirigir al login
+    router.push('/');
+  }
+})
 
 /**
  * @nombre handleLogout
@@ -62,11 +56,11 @@ const handleLogout = async () => {
     
     <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-200">
       <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">
-        Portal de Alumno
+        Bienvenido, {{ authStore.usuario?.nombre || 'Alumno' }}
       </h1>
       <button 
-        @click="handleLogout"
-        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md w-full sm:w-auto transition-all duration-200">
+        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md w-full sm:w-auto transition-all duration-200"
+        @click="handleLogout">
         Cerrar Sesión
       </button>
     </header>

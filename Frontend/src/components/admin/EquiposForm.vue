@@ -38,7 +38,7 @@
       </div>
 
       <div class="flex justify-end space-x-2">
-        <button type="button" @click="$emit('cerrar')" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
+        <button type="button" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400" @click="$emit('cerrar')">
           Cancelar
         </button>
         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
