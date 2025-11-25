@@ -1,6 +1,7 @@
 <script setup>
   import { useScanStore } from '../stores/scanStore';
   import Scaner from './scanerDynamsoft.vue'; // Componente hijo
+  import axios from 'axios';
 
   const store = useScanStore();
 
@@ -12,7 +13,14 @@
     }
     
     // aviso al usuario del envio de datos
-    alert(`Enviando Préstamo:\nRUT: ${store.rutUsuario}\nEquipo: ${store.idEquipo}`);
+    axios.post(import.meta.env.VITE_API_URL + "/prestamos", {
+      rutUsuario: store.rutUsuario,
+      idEquipo: store.idEquipo
+    }).then((response) => {
+      alert(response.data.message);
+    }).catch((error) => {
+      alert(error.response.data.error);
+    })
     store.resetForm();
   };
 
@@ -23,7 +31,13 @@
     }
     
     // aviso al usuario del envio de datos
-    alert(`Enviando Devolución:\nID: ${store.idDevolucion}`);
+    axios.post(import.meta.env.VITE_API_URL + "/devolucion", {
+      idDevolucion: store.idDevolucion
+    }).then((response) => {
+      alert(response.data.message);
+    }).catch((error) => {
+      alert(error.response.data.error);
+    })
     store.resetForm();
   }
 </script>
