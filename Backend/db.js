@@ -1,19 +1,23 @@
 // Busca un archivo llamado '.env' en la raíz y carga sus valores.
-require('dotenv').config(); 
+require('dotenv').config();
+const mysql = require("mysql2/promise")
 
 
-const dbConfig = {
-    // La dirección del servidor de BD
+const pool = mysql.createPool ({
     host: process.env.DB_HOST,
-    
-    // El usuario de MySQL
-    user: process.env.DB_USER, 
-    
-    password: process.env.DB_PASSWORD, 
-    
-    // El nombre de la base de datos
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
     database: process.env.DB_NAME,
-};
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+})
 
+pool.getConnection().then(conn => {
+    pool.releaseConnection(conn)
+    console.log("conexion establecida")
+}).catch(err => {
+    console.log("erorr de conexion: " + err)
+})
 
-module.exports = dbConfig;
+module.exports = pool;

@@ -1,18 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 // Auth components
-import login from "../components/login.vue";
-import register from "../components/register.vue";
+import login from "../components/loginGoogle.vue";
+import register from "../components/registerRut.vue";
 import Alumnos from '../views/Alumnos/Alumnos.vue';
-
-// Admin layout
-import AdminLayout from "../components/admin/AdminLayout.vue";
-
-// Admin views
-import DashboardView from "../views/admin/DashboardView.vue";
-import EquiposView from "../views/admin/EquiposView.vue";
-import SalasView from "../views/admin/SalasView.vue";
-
+import profesor from "../components/profesorPrestamo.vue";
 
 // Admin layout
 import AdminLayout from "../components/admin/AdminLayout.vue";
@@ -39,6 +31,11 @@ const router = createRouter({
             path: "/",
             name: "alumnos",
             component: Alumnos
+        },
+        {
+            path: "/profesores",
+            name: "profesoresPrestamo",
+            component: profesor
         },
         {
             path: "/admin",

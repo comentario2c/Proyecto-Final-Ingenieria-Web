@@ -1,7 +1,7 @@
 <script setup>
     import { getRedirectResult, signInWithRedirect, GoogleAuthProvider, getAuth } from 'firebase/auth';
-    import { RouterLink, useRouter } from 'vue-router';
-    import { useLoginStore } from '../store/login';
+    import { useRouter } from 'vue-router';
+    import { useLoginStore } from '../stores/login';
     import { onMounted } from 'vue';
 
     // Flujo
@@ -20,7 +20,6 @@
     const auth = getAuth();
     const router = useRouter();
     const loginStore = useLoginStore();
-    const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
 
     // Para evitar magic strings se usa un diccionario con los tipos de roles
     const rol_type = Object.freeze ({
@@ -55,10 +54,6 @@
         // Separar email direccion@dominio
         const direccion = email.split("@")[0]
         const dominio = email.split("@")[1]
-
-        // -- nombre --
-        let nombreApellido = nombre.split(" ")[0] + nombre.split(" ")[2]
-        nombreApellido = nombreApellido.toLowerCase()
 
         // Comparaciones
         const esAlumno = dominio === rol_type.alumno // && esExistente(uid) === true // && nombreApellido === direccion - no se si tiene sentido
@@ -104,7 +99,6 @@
     }
 
     const loginGoogle = async () => {
-        alert("click recibido")
         try {
             await signInWithRedirect(auth, googleProvider);
         } catch (error) {
@@ -114,7 +108,6 @@
     }
 
     onMounted(async () => {
-        alert("la app se ha montado")
         try {
             const result = await getRedirectResult(auth);
             if (result) {
@@ -123,7 +116,7 @@
                 obtenerRol(user.email, user.displayName, user.uid, user.accessToken);
             }
             else {
-
+                console.log("No se recibió un usuario")
             }
         } catch(error) {
             alert("Error en la autenticacion con google: " + error.message)
@@ -134,9 +127,18 @@
 <template>
     <div class="flex flex-col items-center md:p-16 place-content-center h-screen">
         <div class="flex flex-col items-center bg-gray-100 p-10 md:p-20 rounded-lg shadow-lg">
-            <h1 class="pb-5 text-xl md:text-3xl">Bienvenido a Control de Prestamos</h1>
-            <p class="text-xs px-4 py-2 mb-5 w-100 text-center md:w-100 sm:w-110">Registra prestamos de equipos de manera sencilla y rapida, inicia sesion con tu cuenta institucional para continuar</p>
-            <button class="bg-blue-700 text-white px-5 py-2 rounded-xl md:px-20 hover:scale-105 transition duration-300 cursor-pointer" @click="loginGoogle()"><img src="/google.svg" class="inline-block"></img> Ingresar con Google</button>
+            <h1 class="pb-5 text-xl md:text-3xl">
+            Bienvenido a Control de Prestamos
+            </h1>
+            <p class="text-xs px-4 py-2 mb-5 w-100 text-center md:w-100 sm:w-110">
+            Registra prestamos de equipos de manera sencilla y rapida, inicia sesion con tu cuenta institucional para continuar
+            </p>
+            <button 
+                class="bg-blue-700 text-white px-5 py-2 rounded-xl md:px-20 hover:scale-90 transition duration-300 cursor-pointer hover:bg-blue-600" 
+                @click="loginGoogle()">
+                <img src="/google.svg" class="inline-block" />
+                Ingresar con Google 
+            </button>
         </div>
     </div>
 </template>

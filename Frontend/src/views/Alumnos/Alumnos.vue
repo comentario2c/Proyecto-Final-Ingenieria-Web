@@ -59,8 +59,8 @@ const handleLogout = async () => {
         Bienvenido, {{ authStore.usuario?.nombre || 'Alumno' }}
       </h1>
       <button 
-        @click="handleLogout"
-        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md w-full sm:w-auto transition-all duration-200">
+        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md w-full sm:w-auto transition-all duration-200"
+        @click="handleLogout">
         Cerrar Sesión
       </button>
     </header>
