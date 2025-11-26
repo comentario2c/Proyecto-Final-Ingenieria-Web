@@ -1,50 +1,44 @@
 <script setup>
+// Traemos las funciones necesarias de Vue, Firebase y nuestros Stores.
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAuth, signOut } from "firebase/auth";
 import { usePrestamosStore } from '../../stores/prestamosStore.js'
 import { useAuthStore } from '../../stores/authStore.js'
 
-// Inicialización de Herramientas 
-const prestamosStore = usePrestamosStore() // Instancia del store de préstamos
-const authStore = useAuthStore() // Instancia del store de autenticación
-const router = useRouter() // Instancia del router
-const auth = getAuth() // Instancia de Firebase Auth
+// Guardamos las herramientas en variables para usarlas más abajo.
+const prestamosStore = usePrestamosStore() // Para manejar los préstamos.
+const authStore = useAuthStore() // Para manejar al usuario conectado.
+const router = useRouter() // Para cambiar de página.
+const auth = getAuth() // Para hablar con Firebase Auth.
 
-/**
- * @nombre onMounted
- * @desc Se ejecuta una vez que el componente se ha cargado en la página.
- */
 onMounted(async () => {
-  // 1. Obtener el ID del Store de forma robusta
+  // Intenta leer el ID del usuario desde el Store.
+  // Busca en dos lugares posibles para asegurarse de encontrarlo.
   const userID = authStore.usuario?.ID_Usuario || authStore.usuario?.uid; 
 
-  // Línea de debugging
+  // Escribe el ID en la consola para comprobar que todo va bien.
   console.log("UserID del Store para buscar préstamos:", userID); 
 
   if (userID) { 
-    // 2. Si hay ID, buscar préstamos
+    // SI HAY USUARIO: Le dice al Store que busque los préstamos de este ID.
     await prestamosStore.fetchMisPrestamos(userID); 
   } else {
-    // 3. Si no hay ID, redirigir al login
+    // SI NO HAY USUARIO: Lo manda de vuelta a la página de Login.
     router.push('/');
   }
 })
 
-/**
- * @nombre handleLogout
- * @desc Se activa con el botón "Cerrar Sesión".
- * Limpia la sesión del usuario y lo redirige.
- */
 const handleLogout = async () => {
   try {
-    // Cerrar sesión en Firebase
-    await signOut(auth) 
-    // Limpiar el "cerebro" (Pinia)
+    // Avisa a Firebase que cierre la sesión real.
+     await signOut(auth) 
+    // Limpia los datos del usuario de nuestra memoria local.
     authStore.clearUser() 
-    // Redirigir al login
+   // Manda al usuario a la pantalla de Login.
     router.push('/') 
   } catch (error) {
+    // Si falla, muestra el error en la consola y una alerta.
     console.error("Error al cerrar sesión:", error)
     alert("Error al cerrar sesión.")
   }
