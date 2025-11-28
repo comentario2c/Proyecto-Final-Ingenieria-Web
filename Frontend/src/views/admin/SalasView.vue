@@ -1,263 +1,149 @@
 <template>
+  <div>
+    <h1 class="text-2xl font-semibold mb-6">Salas</h1>
 
- <div class="p-6">
+    <!-- Tabla de Salas -->
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b">
+            <th class="py-2 px-3">Nombre</th>
+            <th class="py-2 px-3">Stock Equipos</th>
+            <th class="py-2 px-3">Descripción</th>
+            <th class="py-2 px-3">Acciones</th>
+          </tr>
+        </thead>
 
-  <h1 class="text-2xl font-semibold mb-4">Gestión de Equipos</h1>
+        <tbody>
+          <tr v-for="sala in salas" :key="sala.nombreSala" class="border-b">
+            <td class="py-2 px-3">{{ sala.nombreSala }}</td>
+            <td class="py-2 px-3">{{ sala.stockEquipos }}</td>
+            <td class="py-2 px-3">{{ sala.descripcion }}</td>
 
-  
+            <td class="py-2 px-3 flex gap-3">
+              <button
+                class="bg-blue-500 text-white px-3 py-1 rounded"
+                @click="editarSala(sala)"
+              >
+                Editar
+              </button>
 
-  <button
+              <button
+                class="bg-red-500 text-white px-3 py-1 rounded"
+                @click="eliminarSala(sala.nombreSala)"
+              >
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-   @click="abrirModal(null)"
+    <!-- Formulario -->
+    <div class="bg-white p-6 mt-6 rounded-lg shadow-sm border border-gray-200">
+      <h2 class="text-xl font-semibold mb-4">
+        {{ editando ? "Editar Sala" : "Crear Sala" }}
+      </h2>
 
-   class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+      <form @submit.prevent="guardarSala">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-  >
+          <div>
+            <label class="block text-sm font-medium mb-1">Nombre Sala</label>
+            <input
+              type="text"
+              v-model="form.nombreSala"
+              :disabled="editando"
+              class="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
 
-   + Nuevo Equipo
+          <div>
+            <label class="block text-sm font-medium mb-1">Stock Equipos</label>
+            <input
+              type="number"
+              v-model="form.stockEquipos"
+              min="0"
+              class="w-full px-3 py-2 border rounded"
+            />
+          </div>
 
-  </button>
+          <div class="col-span-2">
+            <label class="block text-sm font-medium mb-1">Descripción</label>
+            <textarea
+              v-model="form.descripcion"
+              class="w-full px-3 py-2 border rounded"
+            ></textarea>
+          </div>
 
-  
+        </div>
 
-  <table class="w-full mt-6 border-collapse border border-gray-200 text-sm">
-
-   <thead class="bg-gray-100">
-
-    <tr>
-
-     <th class="border px-3 py-2">ID</th>
-
-     <th class="border px-3 py-2">Modelo</th>
-
-     <th class="border px-3 py-2">N° Serie</th>
-
-     <th class="border px-3 py-2">Estado</th>
-
-     <th class="border px-3 py-2">Sala</th>
-
-     <th class="border px-3 py-2 text-center">Acciones</th>
-
-    </tr>
-
-   </thead>
-
-   <tbody>
-
-    <tr v-for="equipo in equipos" :key="equipo.ID_Equipo">
-
-     <td class="border px-3 py-2">{{ equipo.ID_Equipo }}</td>
-
-     <td class="border px-3 py-2">{{ equipo.modelo }}</td>
-
-     <td class="border px-3 py-2">{{ equipo.numeroSerie }}</td>
-
-     <td class="border px-3 py-2">{{ equipo.estado }}</td>
-
-     <td class="border px-3 py-2">{{ equipo.nombreSala }}</td>
-
-     <td class="border px-3 py-2 text-center">
-
-      <button @click="abrirModal(equipo)" class="text-blue-600 hover:underline">Editar</button>
-
-      <button @click="eliminarEquipo(equipo.ID_Equipo)" class="text-red-600 hover:underline ml-3">Eliminar</button>
-
-     </td>
-
-    </tr>
-
-   </tbody>
-
-  </table>
-
-  
-
-  <!-- Modal -->
-
-  <div
-
-   v-if="mostrarModal"
-
-   class="fixed inset-0 flex items-center justify-center bg-black/40 z-50"
-
-  >
-
-   <div class="bg-white rounded-2xl shadow-xl p-6 w-96 border border-gray-200">
-
-    <EquiposForm
-
-     :equipo="equipoSeleccionado"
-
-     @guardar="guardarEquipo"
-
-     @cerrar="cerrarModal"
-
-    />
-
-   </div>
+        <button
+          type="submit"
+          class="bg-green-600 text-white mt-4 px-4 py-2 rounded"
+        >
+          {{ editando ? "Actualizar" : "Crear" }}
+        </button>
+      </form>
+    </div>
 
   </div>
-
- </div>
-
 </template>
 
-  
-
-<script setup>
-
+<script>
 import axios from "axios";
 
-import { ref, onMounted } from "vue";
+export default {
+  data() {
+    return {
+      salas: [],
+      editando: false,
+      form: {
+        nombreSala: "",
+        stockEquipos: 0,
+        descripcion: "",
+      },
+    };
+  },
 
-import EquiposForm from "../../components/admin/EquiposForm.vue";
+  async mounted() {
+    this.cargarSalas();
+  },
 
-  
+  methods: {
+    async cargarSalas() {
+      const res = await axios.get("http://localhost:3000/api/salas");
+      this.salas = res.data;
+    },
 
-const equipos = ref([]);
+    editarSala(sala) {
+      this.editando = true;
+      this.form = { ...sala };
+    },
 
-const mostrarModal = ref(false);
+    async eliminarSala(nombre) {
+      if (!confirm("¿Seguro que deseas eliminar esta sala?")) return;
 
-const equipoSeleccionado = ref(null);
+      await axios.delete(`http://localhost:3000/api/salas/${nombre}`);
+      this.cargarSalas();
+    },
 
-  
+    async guardarSala() {
+      if (this.editando) {
+        await axios.put(
+          `http://localhost:3000/api/salas/${this.form.nombreSala}`,
+          this.form
+        );
+      } else {
+        await axios.post("http://localhost:3000/api/salas", this.form);
+      }
 
-const API_URL = "http://localhost:3000/api/equipos";
-
-  
-
-const cargarEquipos = async () => {
-
- try {
-
-  const res = await axios.get(API_URL);
-
-  equipos.value = res.data;
-
- } catch (err) {
-
-  console.error("Error cargando equipos:", err);
-
- }
-
+      this.editando = false;
+      this.form = { nombreSala: "", stockEquipos: 0, descripcion: "" };
+      this.cargarSalas();
+    },
+  },
 };
-
-  
-
-onMounted(cargarEquipos);
-
-  
-
-const abrirModal = (equipo) => {
-
- equipoSeleccionado.value = equipo ? { ...equipo } : null;
-
- mostrarModal.value = true;
-
-};
-
-  
-
-const cerrarModal = () => {
-
- mostrarModal.value = false;
-
- equipoSeleccionado.value = null;
-
-};
-
-  
-
-const guardarEquipo = async (equipo) => {
-
- try {
-
-  if (equipoSeleccionado.value) {
-
-   await axios.put(`${API_URL}/${equipo.ID_Equipo}`, equipo);
-
-  } else {
-
-   await axios.post(API_URL, equipo);
-
-  }
-
-  cargarEquipos();
-
-  cerrarModal();
-
- } catch (err) {
-
-  console.error("Error guardando equipo:", err);
-
- }
-
-};
-
-  
-
-const eliminarEquipo = async (id) => {
-
- try {
-
-  await axios.delete(`${API_URL}/${id}`);
-
-  cargarEquipos();
-
- } catch (err) {
-
-  console.error("Error eliminando equipo:", err);
-
- }
-
-};
-
 </script>
-
-  
-
-<style>
-
-.fade-enter-active,
-
-.fade-leave-active {
-
- transition: opacity 0.3s ease;
-
-}
-
-.fade-enter-from,
-
-.fade-leave-to {
-
- opacity: 0;
-
-}
-
-  
-
-.zoom-enter-active,
-
-.zoom-leave-active {
-
- transition: all 0.25s ease;
-
-}
-
-.zoom-enter-from {
-
- opacity: 0;
-
- transform: scale(0.9);
-
-}
-
-.zoom-leave-to {
-
- opacity: 0;
-
- transform: scale(0.9);
-
-}
-
-</style>
