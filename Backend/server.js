@@ -158,6 +158,11 @@ app.use("/api/auth", authRoutes);
 
 const prestamosRoutes = require("./router/prestamoRoutes");
 app.use("/api/prestamos", prestamosRoutes);
+//-------------------Pepe--------------------------------
+
+const prestamoAlumnoRouter = require('./router/prestamoAlumnoRouter');
+app.use("/api/prestamoAlumno", prestamoAlumnoRouter);
+
 // ---------------------------------------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Server listening http://localhost:${PORT}`));
