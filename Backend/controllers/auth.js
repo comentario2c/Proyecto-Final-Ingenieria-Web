@@ -21,7 +21,7 @@ const userInfo = {
     email: "",
     uid: "",
     token: "",
-    rol: "" 
+    rol: "" || null
 }
 
 const db_rol = {
@@ -61,7 +61,7 @@ function consultarUsuario(uid){
     return true;
 }
 
-async function enviarRespuesta(rol, res) {
+async function insertarUsuarioDB(rol){
     const result = await db.query(insertarUsuario, [userInfo.uid, userInfo.usuario, userInfo.email, true, rol]); 
     if (result === 0){
         res.json({
@@ -69,6 +69,9 @@ async function enviarRespuesta(rol, res) {
         })
         return;
     }
+}
+
+async function enviarRespuesta(rol, res) {
     res.json({
         message: msg_auth.authTrue,
         usuario: userInfo.usuario,
@@ -96,21 +99,27 @@ const loginGoogle = (req, res) => {
             switch (true){
                 case dominio === dominios.alu:
                     userInfo.rol = db_rol.alu;
-                    if (consultarUsuario(userInfo.uid)) {
+                    if (!consultarUsuario(userInfo.uid)) {
                         enviarRespuesta(userInfo.rol, res);
                     }
+                    enviarRespuesta(userInfo.rol, res);
+                    insertarUsuarioDB(userInfo.rol);
                     break;
                 case dominio === dominios.profesor:
                     userInfo.rol = db_rol.pro;
-                    if (consultarUsuario(userInfo.uid)) {
+                    if (!consultarUsuario(userInfo.uid)) {
                         enviarRespuesta(userInfo.rol, res);
                     }
+                    enviarRespuesta(userInfo.rol, res);
+                    insertarUsuarioDB(userInfo.rol);
                     break;
                 case dominio === dominios.admin:
                     userInfo.rol = db_rol.adm;
-                    if (consultarUsuario(userInfo.uid)) {
+                    if (!consultarUsuario(userInfo.uid)) {
                         enviarRespuesta(userInfo.rol, res);
                     }
+                    enviarRespuesta(userInfo.rol, res);
+                    insertarUsuarioDB(userInfo.rol);
                     break;
                 default:
                     userInfo.rol = "";
