@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const verificarToken = require('../Middleware/authMiddleware');
-const { loginGoogle, completarPerfil } = require('../controllers/auth');
+const { loginGoogle } = require('../controllers/auth');
+const { authMiddleware } = require('../Middleware/authMiddleware');
 
-router.post("/googlelogin", verificarToken, loginGoogle);
-router.post("/completar-perfil", verificarToken, completarPerfil);
+router.post("/", authMiddleware, loginGoogle);
 
 module.exports = router;

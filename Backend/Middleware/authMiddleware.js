@@ -1,30 +1,47 @@
 const admin = require('firebase-admin');
 
-const serviceAccount = require("../sdkFirebase.json"); // deberia de manejarse con variables de entorno
+const dominios = {
+    alu: "alu.unach.cl",
+    profesor: "unach.cl",
+    admin: "unach.cl"
+}
 
-if (!admin.apps.length){
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
+function verificarDominio(email){
+    const dominio = email.split("@")[1];
+    
+    switch (true){
+        case dominio === dominios.alu:
+            return true;
+        case dominio === dominios.profesor:
+            return true;
+        case dominio === dominios.admin:
+            return true;
+        default:
+            return false;
+    }
+}
+
+const authMiddleware = (req, res, next) => {
+    const token = req.body.token;
+
+    if (!token) {
+        return res.status(401).json({ message: "Token no proporcionado" })
+    }
+
+
+    admin.auth().verifyIdToken(token)
+    .then((decodedToken) => {
+        const email = decodedToken.email;
+
+        if (verificarDominio(email)) {
+            next();
+        }else{
+            return res.status(401).json({ message: "Por favor, utilice su cuenta institucional para iniciar sesion"})
+        }
+    })
+    .catch((error) => {
+        res.status(401).json({ message: "Token invalido" });
     })
 }
 
-const verificarToken = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    // Solo se buscan aquellos token que empiecen con Bearer (declaracion de token de acceso OAuth2.0)
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'No autorizado. Token faltante o inválido.' });
-    }
-    
-    const idToken = authHeader.split(' ')[1];
-
-    try {
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        req.user = decodedToken;
-        next();
-    } catch (error) {
-        return res.status(403).json({ error: 'Token expirado o inválido' });
-    }
-}
-
-module.exports = verificarToken;
+module.exports = { authMiddleware }

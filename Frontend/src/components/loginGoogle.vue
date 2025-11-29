@@ -1,127 +1,125 @@
 <script setup>
-    import { getRedirectResult, signInWithRedirect, GoogleAuthProvider, getAuth } from 'firebase/auth';
+    import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
+    import { useLoginStore } from '../stores/login.js'
     import { useRouter } from 'vue-router';
-    import { useLoginStore } from '../stores/login';
-    import { onMounted } from 'vue';
-
-    // Flujo
-    // 1. El usuario se loggea -- Boton creado
-    // 2. Se identifica si es alumno, profesor o director de carrera -- obtenerRol()
-    //  2.1 Si es alumno debe de entregar el token y redirigirlo a su menú correspondiente 
-    //  2.2 Si es profesor debe de entregar el toekn y redirigirlo a su menú correspondiente
-    //  2.3 Si es director debe de entregar el token y redirigirlo a su menú correspondiente
-    //  2.4 Si no cumple con las condiciones anteriores manejar el error
-    // 3. Preguntar a la DB ¿El usuario existe? -- esExistente()
-    //  3.1 Si existe no hacer nada
-    //  3.2 Si no existe crear el usuario en la DB guardando el UID de firebase, nombre, correo y rol
-    // 4. Si algo falla en la autenticacion de google manejar el error
+    import axios from 'axios';
+    import { reactive } from 'vue';
 
     const googleProvider = new GoogleAuthProvider();
     const auth = getAuth();
     const router = useRouter();
     const loginStore = useLoginStore();
 
-    // Para evitar magic strings se usa un diccionario con los tipos de roles
-    const rol_type = Object.freeze ({
-        alumno: "alu.unach.cl",
-        profesor: "unach.cl",
-        director: "dir"
-    })
-
-    const rolDB = Object.freeze ({
-        alumno: "alumno",
-        profesor: "profesor",
-        director: "director"
-    })
-
-    function esExistente() {
-        // Consultar a la base de datos si hay un usuario con la uid
-        // if si la consulta devuelve true no debe hacer nada
-        // if si la consulta devuelve false toma los datos del usuario y hace un insert para el registro
-        const esExistente = fetch("")
-
-        if (esExistente === true){
-            return router.push("/alumno")
-        }
-
-        if (esExistente === false){
-            return router.push("/register")
-        }
+    const db_rol = {
+        alu: "alumno",
+        pro: "profesor",
+        adm: "admin"
     }
 
-    function obtenerRol(email, nombre, uid, token){
-        // -- email --
-        // Separar email direccion@dominio
-        const direccion = email.split("@")[0]
-        const dominio = email.split("@")[1]
+    const msg_auth = {
+        authTrue: "Autenticado",
+        authFalse: "No autenticado",
+        authError: "Error al autenticar",
+        authFirst: "Primer inicio de sesion"
+    }
 
-        // Comparaciones
-        const esAlumno = dominio === rol_type.alumno // && esExistente(uid) === true // && nombreApellido === direccion - no se si tiene sentido
-        const esProfesor = dominio === rol_type.profesor && esExistente(uid) === true
-        const esDirector = direccion.slice(0,3) === rol_type.director && dominio === rol_type.profesor && esExistente(uid) === true
-        let rol = "";
-        
-        // Devolver
-        if (esAlumno === true){
-            rol = rolDB.alumno;
+    const userInfo = reactive({
+        usuario: '',
+        email: '',
+        uid: '',
+        token: '' 
+    })
 
-            loginStore.$patch({
-                nombre: nombre,
-                email: email,
-                uid: uid,
-                token: token,
-                rol: rol
-            })
-
-            return router.push("/register")
-        }
-        
-        if(esProfesor === true){
-            return console.log("El usuario es un profesor")
-        }
-        
-        if(esDirector === true){
-            return console.log("Es un director")
-        }
-        
-        // Manejo de errores
-        if(dominio !== rol_type.alumno && dominio !== rol_type.profesor) {
-            return alert("El correo utilizado para la autenticacion no pertenece a la organización, porfavor utilice un corrreo institucional")
-        }
-
-        if (esExistente() === false){
-            return alert("Es tu primera vez en esta app, Registrate!")
-        }
-
-        else {
-            return alert("error desconocido")
-        }
+    const consultarUsuario = (token) => {
+        axios.post(import.meta.env.VITE_API_URL + '/auth', {
+            token: token
+        })
+        .then(response => {
+            switch (true) {
+                case response.data.rol === db_rol.alu && response.data.message === msg_auth.authTrue:
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.alu,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
+                    })
+                    router.push("/alumnos")
+                    break;
+                case response.data.rol === db_rol.pro && response.data.message === msg_auth.authTrue:
+                    router.push("/profesores")
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.pro,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
+                    })
+                    break;
+                case response.data.rol === db_rol.adm && response.data.message === msg_auth.authTrue:
+                    router.push("/admin")
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.adm,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
+                    })
+                    break;
+                case response.data.rol === db_rol.alu && response.data.message === msg_auth.authFirst:
+                    router.push("/register")
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.alu,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
+                    })
+                    break;
+                case response.data.rol === db_rol.pro && response.data.message === msg_auth.authFirst:
+                    router.push("/register")
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.pro,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
+                    })
+                    break;
+                case response.data.rol === db_rol.adm && response.data.message === msg_auth.authFirst:
+                    router.push("/register")
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.adm,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
+                    })
+                    break;
+                case response.data.message === msg_auth.authFalse:
+                    router.push("/")
+                    break;
+                default:
+                    router.push("/")
+                    break;
+            }
+        })
+        .catch(error => {
+            console.error("Error al obtener datos del usuario:", error)
+            router.push("/")
+        })
     }
 
     const loginGoogle = async () => {
         try {
-            await signInWithRedirect(auth, googleProvider);
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+            const token = await user.getIdToken();
+
+            userInfo.usuario = user.displayName;
+            userInfo.email = user.email;
+            userInfo.uid = user.uid;
+            userInfo.token = token;
+
+            consultarUsuario(token);
         } catch (error) {
-            alert("Error al redirigir: " + error.message); 
-            console.error(error);
+            console.error("Error al iniciar sesion con Google:", error);
         }
     }
-
-    onMounted(async () => {
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                const user = result.user;
-                console.log(user)
-                obtenerRol(user.email, user.displayName, user.uid, user.accessToken);
-            }
-            else {
-                console.log("No se recibió un usuario")
-            }
-        } catch(error) {
-            alert("Error en la autenticacion con google: " + error.message)
-        }
-    })
 </script>
 
 <template>

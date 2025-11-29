@@ -10,6 +10,7 @@ const db = require("./db");
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 console.log("=== INICIANDO BACKEND ===");
 console.log("ENV DB_HOST:", process.env.DB_HOST);
@@ -906,8 +907,19 @@ app.get("/api/debug-rutas", async (req, res) => {
   }
 });
 
-// ==========================================
-// 🚀 INICIAR SERVIDOR
-// ==========================================
+const prestamosRoutes = require("./router/prestamosRoutes");
+app.use("/api/prestamos", prestamosRoutes);
+
+const devolucionRoutes = require("./router/devolucionRoutes");
+app.use("/api/devolucion", devolucionRoutes);
+
+const registerRoutes = require("./router/registerRoutes");
+app.use("/api/register", registerRoutes);
+//-------------------Pepe--------------------------------
+
+const prestamoAlumnoRouter = require('./router/prestamoAlumnoRouter');
+app.use("/api/prestamoAlumno", prestamoAlumnoRouter);
+
+// ---------------------------------------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor backend corriendo en puerto ${PORT}`));
