@@ -11,6 +11,10 @@ const registrarPrestamo = async (req, res) => {
 
     try {
         const [result] = await db.query(insertarPrestamo, [idUsuario, idEquipo]);
+        if (result === 0){
+            res.json({ message: 'Error al registrar prestamo' });
+            return;
+        }
         res.json({ message: 'Prestamo registrado correctamente' });
     } catch (error) {
         console.error('Error al registrar prestamo:', error);

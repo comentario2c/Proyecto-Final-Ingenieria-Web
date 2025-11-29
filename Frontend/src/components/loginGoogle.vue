@@ -24,7 +24,7 @@
     }
 
     const userInfo = reactive({
-        nombre: '',
+        usuario: '',
         email: '',
         uid: '',
         token: '' 
@@ -36,31 +36,58 @@
         })
         .then(response => {
             switch (true) {
-                case response.data.rol === "alumno" && response.data.message === msg_auth.authTrue:
+                case response.data.rol === db_rol.alu && response.data.message === msg_auth.authTrue:
                     loginStore.$patch({
                         token: userInfo.token,
                         rol: db_rol.alu,
                         uid: userInfo.uid,
-                        usuario: userInfo.nombre
+                        usuario: userInfo.usuario
                     })
                     router.push("/alumnos")
                     break;
-                case response.data.rol === "profesor" && response.data.message === msg_auth.authTrue:
+                case response.data.rol === db_rol.pro && response.data.message === msg_auth.authTrue:
                     router.push("/profesores")
                     loginStore.$patch({
                         token: userInfo.token,
                         rol: db_rol.pro,
                         uid: userInfo.uid,
-                        usuario: userInfo.nombre
+                        usuario: userInfo.usuario
                     })
                     break;
-                case response.data.rol === "admin" && response.data.message === msg_auth.authTrue:
+                case response.data.rol === db_rol.adm && response.data.message === msg_auth.authTrue:
                     router.push("/admin")
                     loginStore.$patch({
                         token: userInfo.token,
                         rol: db_rol.adm,
                         uid: userInfo.uid,
-                        usuario: userInfo.nombre
+                        usuario: userInfo.usuario
+                    })
+                    break;
+                case response.data.rol === db_rol.alu && response.data.message === msg_auth.authFirst:
+                    router.push("/register")
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.alu,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
+                    })
+                    break;
+                case response.data.rol === db_rol.pro && response.data.message === msg_auth.authFirst:
+                    router.push("/register")
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.pro,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
+                    })
+                    break;
+                case response.data.rol === db_rol.adm && response.data.message === msg_auth.authFirst:
+                    router.push("/register")
+                    loginStore.$patch({
+                        token: userInfo.token,
+                        rol: db_rol.adm,
+                        uid: userInfo.uid,
+                        usuario: userInfo.usuario
                     })
                     break;
                 case response.data.message === msg_auth.authFalse:
@@ -83,7 +110,7 @@
             const user = result.user;
             const token = await user.getIdToken();
 
-            userInfo.nombre = user.displayName;
+            userInfo.usuario = user.displayName;
             userInfo.email = user.email;
             userInfo.uid = user.uid;
             userInfo.token = token;

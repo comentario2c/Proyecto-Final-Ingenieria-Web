@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const db = require("../db")
 
 const serviceAccount = require("../sdkFirebase.json"); // deberia de manejarse con variables de entorno
 
@@ -8,11 +9,19 @@ if (!admin.apps.length){
     })
 }
 
+// Objetos para evitar magic strings
+const dominios = {
+    alu: "alu.unach.cl",
+    profesor: "unach.cl",
+    admin: "unach.cl"
+}
+
 const userInfo = {
-    nombre: "",
+    usuario: "",
     email: "",
     uid: "",
-    token: "" 
+    token: "",
+    rol: "" 
 }
 
 const db_rol = {
@@ -21,6 +30,55 @@ const db_rol = {
     adm: "admin"
 }
 
+const msg_auth = {
+    authTrue: "Autenticado",
+    authFalse: "No autenticado",
+    authError: "Error al autenticar",
+    authFirst: "Primer inicio de sesion",
+}
+
+// Consultas
+const userQuery = "SELECT * FROM Usuario WHERE ID_Usuario = ?"
+const insertarUsuario = "INSERT INTO Usuario (ID_Usuario, nombre, correo, estado, rol) VALUES (?, ?, ?, ?, ?)"
+
+// Funciones auxiliares
+function consultarUsuario(uid){
+    const rowsUsuario = db.query(userQuery, [uid]);
+
+    if(rowsUsuario === 0){
+        res.json({
+            message: msg_auth.authFirst
+        })
+        return true;
+    }
+
+    if (rowsUsuario > 1) {
+        res.json({
+            message: msg_auth.authError
+        })
+        return false;
+    }
+    return true;
+}
+
+async function enviarRespuesta(rol, res) {
+    const result = await db.query(insertarUsuario, [userInfo.uid, userInfo.usuario, userInfo.email, true, rol]); 
+    if (result === 0){
+        res.json({
+            message: msg_auth.authError
+        })
+        return;
+    }
+    res.json({
+        message: msg_auth.authTrue,
+        usuario: userInfo.usuario,
+        rol: rol,
+        uid: userInfo.uid,
+        token: userInfo.token,
+    })
+}
+
+// Funcion principal
 const loginGoogle = (req, res) => {
 
     const token = req.body.token;
@@ -28,26 +86,48 @@ const loginGoogle = (req, res) => {
     try{
         admin.auth().verifyIdToken(token)
         .then((decodedToken) => {
-            userInfo.nombre = decodedToken.displayName;
+            userInfo.usuario = decodedToken.name;
             userInfo.email = decodedToken.email;
             userInfo.uid = decodedToken.uid;
             userInfo.token = token;
 
-            res.json({
-                message: "Autenticado",
-                user: userInfo.nombre,
-                rol: db_rol.alu,
-                uid: userInfo.uid,
-                token: userInfo.token,
-                usuario: userInfo.usuario
-            })
+            const dominio = userInfo.email.split("@")[1];
+
+            switch (true){
+                case dominio === dominios.alu:
+                    userInfo.rol = db_rol.alu;
+                    if (consultarUsuario(userInfo.uid)) {
+                        enviarRespuesta(userInfo.rol, res);
+                    }
+                    break;
+                case dominio === dominios.profesor:
+                    userInfo.rol = db_rol.pro;
+                    if (consultarUsuario(userInfo.uid)) {
+                        enviarRespuesta(userInfo.rol, res);
+                    }
+                    break;
+                case dominio === dominios.admin:
+                    userInfo.rol = db_rol.adm;
+                    if (consultarUsuario(userInfo.uid)) {
+                        enviarRespuesta(userInfo.rol, res);
+                    }
+                    break;
+                default:
+                    userInfo.rol = "";
+                    break;
+            }
+
+            
         })
         .catch((error) => {
             console.log(error);
             res.json({
                 message: "No autenticado",
                 user: "",
-                rol: ""
+                rol: "",
+                uid: "",
+                token: "",
+                usuario: ""
             })
         })
     }catch(error){
