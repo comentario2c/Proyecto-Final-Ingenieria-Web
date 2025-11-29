@@ -1,129 +1,147 @@
-const db = require('../db');
+const admin = require('firebase-admin');
+const db = require("../db")
 
-const rol_db = {
-    alumno: "alumno",
-    profesor: "profesor",
+const serviceAccount = require("../sdkFirebase.json"); // deberia de manejarse con variables de entorno
+
+if (!admin.apps.length){
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+    })
 }
 
-const dominio_db = {
-    alumno: "alu.unach.cl",
-    profesor: "unach.cl"
+// Objetos para evitar magic strings
+const dominios = {
+    alu: "alu.unach.cl",
+    profesor: "unach.cl",
+    admin: "unach.cl"
 }
 
-const loginGoogle = async (req, res) => {
-    const uid = req.user.uid;
-    const email = req.user.email;
+const userInfo = {
+    usuario: "",
+    email: "",
+    uid: "",
+    token: "",
+    rol: "" || null
+}
 
-    // pregunto si existe un nombre en el json de vue o en la base de datos, si no hay ninguno "Usuario"
-    const displayName = req.user.name || req.body.displayName || 'Usuario';
+const db_rol = {
+    alu: "alumno",
+    pro: "profesor",
+    adm: "admin"
+}
 
-    // Si no viene el uid o el email retornamos 400
-    if (!uid || !email) return res.status(400).json({ error: 'Faltan datos' });
+const msg_auth = {
+    authTrue: "Autenticado",
+    authFalse: "No autenticado",
+    authError: "Error al autenticar",
+    authFirst: "Primer inicio de sesion",
+}
 
-    try {
-        // Buscamos al usuario en la base de datos
-        const [rows] = await db.query('SELECT * FROM Usuario WHERE ID_Usuario = ?', [uid]);
+// Consultas
+const userQuery = "SELECT * FROM Usuario WHERE ID_Usuario = ?"
+const insertarUsuario = "INSERT INTO Usuario (ID_Usuario, nombre, correo, estado, rol) VALUES (?, ?, ?, ?, ?)"
 
-        // Si existe el usuario
-        if (rows.length > 0) {
-            const usuario = rows[0];
+// Funciones auxiliares
+function consultarUsuario(uid){
+    const rowsUsuario = db.query(userQuery, [uid]);
 
-            // Comprobamos el borrado logico
-            if (usuario.estado === 0) {
-                return res.status(403).json({ error: 'Cuenta desactivada. Contacte al administrador.' });
-            }
+    if(rowsUsuario === 0){
+        res.json({
+            message: msg_auth.authFirst
+        })
+        return true;
+    }
 
-            // Usuario registrado pero sin rut
-            if (!usuario.rut) {
-                return res.status(200).json({
-                    esNuevo: true, // Obligamos al usuario a registrarse 
-                    usuario: {
-                        uid: usuario.ID_Usuario,
-                        nombre: usuario.nombre,
-                        email: usuario.correo,
-                        rol: usuario.rol
+    if (rowsUsuario > 1) {
+        res.json({
+            message: msg_auth.authError
+        })
+        return false;
+    }
+    return true;
+}
+
+async function insertarUsuarioDB(rol){
+    const result = await db.query(insertarUsuario, [userInfo.uid, userInfo.usuario, userInfo.email, true, rol]); 
+    if (result === 0){
+        res.json({
+            message: msg_auth.authError
+        })
+        return;
+    }
+}
+
+async function enviarRespuesta(rol, res) {
+    res.json({
+        message: msg_auth.authTrue,
+        usuario: userInfo.usuario,
+        rol: rol,
+        uid: userInfo.uid,
+        token: userInfo.token,
+    })
+}
+
+// Funcion principal
+const loginGoogle = (req, res) => {
+
+    const token = req.body.token;
+
+    try{
+        admin.auth().verifyIdToken(token)
+        .then((decodedToken) => {
+            userInfo.usuario = decodedToken.name;
+            userInfo.email = decodedToken.email;
+            userInfo.uid = decodedToken.uid;
+            userInfo.token = token;
+
+            const dominio = userInfo.email.split("@")[1];
+
+            switch (true){
+                case dominio === dominios.alu:
+                    userInfo.rol = db_rol.alu;
+                    if (!consultarUsuario(userInfo.uid)) {
+                        enviarRespuesta(userInfo.rol, res);
                     }
-                });
+                    enviarRespuesta(userInfo.rol, res);
+                    insertarUsuarioDB(userInfo.rol);
+                    break;
+                case dominio === dominios.profesor:
+                    userInfo.rol = db_rol.pro;
+                    if (!consultarUsuario(userInfo.uid)) {
+                        enviarRespuesta(userInfo.rol, res);
+                    }
+                    enviarRespuesta(userInfo.rol, res);
+                    insertarUsuarioDB(userInfo.rol);
+                    break;
+                case dominio === dominios.admin:
+                    userInfo.rol = db_rol.adm;
+                    if (!consultarUsuario(userInfo.uid)) {
+                        enviarRespuesta(userInfo.rol, res);
+                    }
+                    enviarRespuesta(userInfo.rol, res);
+                    insertarUsuarioDB(userInfo.rol);
+                    break;
+                default:
+                    userInfo.rol = "";
+                    break;
             }
 
-            // Usuario ya registrado y con rut completo
-            return res.status(200).json({
-                esNuevo: false,
-                usuario: {
-                    uid: usuario.ID_Usuario,
-                    nombre: usuario.nombre,
-                    email: usuario.correo,
-                    rol: usuario.rol,
-                    rut: usuario.rut
-                }
-            });
-
-        } else {
-            // Cuando el usuario es nuevo
-            const dominio = email.split('@')[1];
-            let rolInicial = '';
-
-            // A través del correo deducimos si es un alumno o profesor
-            if (dominio === dominio_db.alumno) rolInicial = rol_db.alumno; // Evitamos magicstrings con el diccionario
-            else if (dominio === dominio_db.profesor) rolInicial = rol_db.profesor;
-            else return res.status(403).json({ error: 'Dominio no autorizado.' });
-
-            // Insertamos el nuevo usuario
-            await db.query(
-                'INSERT INTO Usuario (ID_Usuario, nombre, correo, rol, rut, estado) VALUES (?, ?, ?, ?, ?, ?)',
-                [uid, displayName, email, rolInicial, null, 1] 
-            );
-
-            // Devolvemos el rol y el nombre, el nombre para la vista de alumnos por lo menos y el rol para la redireccion
-            return res.status(201).json({
-                esNuevo: true,
-                usuario: {
-                    uid,
-                    nombre: displayName,
-                    email,
-                    rol: rolInicial
-                }
-            });
-        }
-
-    } catch (error) {
-        console.error('Error en loginController:', error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+            
+        })
+        .catch((error) => {
+            console.log(error);
+            res.json({
+                message: "No autenticado",
+                user: "",
+                rol: "",
+                uid: "",
+                token: "",
+                usuario: ""
+            })
+        })
+    }catch(error){
+        console.log(error);
     }
-};
+}
 
-const completarPerfil = async (req, res) => {
-    const { rut } = req.body;
-    const uid = req.user.uid;
-
-    if (!rut) {
-        return res.status(400).json({ error: 'El RUT es obligatorio' });
-    }
-    
-    // Quitamos los . y - para evitar el too long (varchar(9))
-    const rutLimpio = rut.replace(/[\.\-]/g, '');
-
-    if (rutLimpio.length > 9) {
-        return res.status(400).json({ error: 'RUT demasiado largo' });
-    }
-
-    try {
-        // Se actualiza el usuario agregando el rut
-        const [result] = await db.query(
-            'UPDATE Usuario SET rut = ? WHERE ID_Usuario = ?',
-            [rutLimpio, uid]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-
-        res.json({ message: 'Perfil completado exitosamente' });
-
-    } catch (error) {
-        console.error('Error en completarPerfil:', error);
-        res.status(500).json({ error: 'Error al actualizar perfil' });
-    }
-};
-
-module.exports = { loginGoogle, completarPerfil };
+module.exports = { loginGoogle }

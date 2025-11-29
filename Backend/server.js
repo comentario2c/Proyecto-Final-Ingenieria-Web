@@ -10,6 +10,7 @@ const db = require("./db");
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 console.log("=== INICIANDO BACKEND ===");
 console.log("ENV DB_HOST:", process.env.DB_HOST);
@@ -156,8 +157,14 @@ app.delete("/api/salas/:nombreSala", async (req, res) => {
 const authRoutes = require("./router/authRoutes");
 app.use("/api/auth", authRoutes);
 
-const prestamosRoutes = require("./router/prestamoRoutes");
+const prestamosRoutes = require("./router/prestamosRoutes");
 app.use("/api/prestamos", prestamosRoutes);
+
+const devolucionRoutes = require("./router/devolucionRoutes");
+app.use("/api/devolucion", devolucionRoutes);
+
+const registerRoutes = require("./router/registerRoutes");
+app.use("/api/register", registerRoutes);
 // ---------------------------------------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Server listening http://localhost:${PORT}`));

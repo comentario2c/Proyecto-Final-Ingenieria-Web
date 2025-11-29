@@ -1,26 +1,24 @@
 const db = require("../db");
-
-const fecha = new Date();
-
 // query para insertar prestamo
-const insertarPrestamo = "INSERT INTO Prestamos (rutUsuario, idEquipo, fechaPrestamo) VALUES (?, ?, ?)";
+const insertarPrestamo = "INSERT INTO Prestamos (ID_Usuario, ID_Equipo, fechaPrestamo) VALUES (?, ?, NOW())";
+const traerIdUsuario = "SELECT ID_Usuario FROM usuario WHERE rut = ?";
 
-async function registrarPrestamo(req, res) {
-    // recibir datos del frontend
-    const rutUsuario = req.body.rutUsuario;
-    const idEquipo = req.body.idEquipo;
-    const fechaPrestamo = fecha.getFullYear() + "-" + fecha.getMonth() + "-" + fecha.getDate() + " " + fecha.getHours() + ":" + fecha.getMinutes() + ":" + fecha.getSeconds();
+const registrarPrestamo = async (req, res) => {
+    let { rutUsuario, idEquipo } = req.body;
+    idEquipo = String(idEquipo);
+    const [rows] = await db.query(traerIdUsuario, [rutUsuario]);
+    const idUsuario = rows[0].ID_Usuario;
 
-    // insertar prestamo
-    const [rows] = await db.query(insertarPrestamo, [rutUsuario, idEquipo, fechaPrestamo]);
-
-    // verificar si se inserto correctamente
-    if (rows.affectedRows === 0) {
-        return res.status(400).json({ error: "No se pudo registrar el prestamo" });
+    try {
+        const [result] = await db.query(insertarPrestamo, [idUsuario, idEquipo]);
+        if (result === 0){
+            res.json({ message: 'Error al registrar prestamo' });
+            return;
+        }
+        res.json({ message: 'Prestamo registrado correctamente' });
+    } catch (error) {
+        console.error('Error al registrar prestamo:', error);
+        res.status(500).json({ error: 'Error al registrar prestamo' });
     }
-
-    // retornar respuesta al frontend
-    return res.status(200).json({ message: "Prestamo registrado correctamente" });
-}
-
+};
 module.exports = { registrarPrestamo };
