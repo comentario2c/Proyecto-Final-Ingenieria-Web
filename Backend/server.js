@@ -165,6 +165,11 @@ app.use("/api/devolucion", devolucionRoutes);
 
 const registerRoutes = require("./router/registerRoutes");
 app.use("/api/register", registerRoutes);
+//-------------------Pepe--------------------------------
+
+const prestamoAlumnoRouter = require('./router/prestamoAlumnoRouter');
+app.use("/api/prestamoAlumno", prestamoAlumnoRouter);
+
 // ---------------------------------------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Server listening http://localhost:${PORT}`));
