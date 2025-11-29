@@ -1,6 +1,7 @@
 <script setup>
   import { useScanStore } from '../stores/scanStore';
   import Scaner from './scanerDynamsoft.vue'; // Componente hijo
+  import axios from 'axios';
 
   const store = useScanStore();
 
@@ -12,7 +13,14 @@
     }
     
     // aviso al usuario del envio de datos
-    alert(`Enviando Préstamo:\nRUT: ${store.rutUsuario}\nEquipo: ${store.idEquipo}`);
+    axios.post(import.meta.env.VITE_API_URL + "/prestamos", {
+      rutUsuario: store.rutUsuario,
+      idEquipo: store.idEquipo
+    }).then((response) => {
+      alert(response.data.message);
+    }).catch((error) => {
+      alert(error.response.data.error);
+    })
     store.resetForm();
   };
 
@@ -23,7 +31,13 @@
     }
     
     // aviso al usuario del envio de datos
-    alert(`Enviando Devolución:\nID: ${store.idDevolucion}`);
+    axios.post(import.meta.env.VITE_API_URL + "/devolucion", {
+      idDevolucion: store.idDevolucion
+    }).then((response) => {
+      alert(response.data.message);
+    }).catch((error) => {
+      alert(error.response.data.error);
+    })
     store.resetForm();
   }
 </script>
@@ -62,10 +76,10 @@
             type="text" 
             required
             placeholder="PC-LAB-04"
-            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none transition"
+            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition"
           />
           <button 
-            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
             title="Escanear Equipo"
             @click="store.abrirScanner('equipo')"
           >

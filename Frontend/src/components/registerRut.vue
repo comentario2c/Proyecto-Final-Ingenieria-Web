@@ -2,6 +2,7 @@
     import { useLoginStore } from '../stores/login';
     import { useRouter } from 'vue-router';
     import { ref } from 'vue';
+    import axios from 'axios';
 
     const loginStore = useLoginStore();
     const router = useRouter();
@@ -9,16 +10,14 @@
 
     const usuario = {
         uid: loginStore.uid,
-        nombre: loginStore.nombre,
-        email: loginStore.email,
-        rol: loginStore.rol
+        token: loginStore.token
     }
 
-    const rolDB = Object.freeze ({
-        alumno: "alumno",
-        profesor: "profesor",
-        director: "director"
-    })
+    const db_rol = {
+        alu: "alumno",
+        pro: "profesor",
+        adm: "admin"
+    }
     
     function esLoggeado(){
         if (loginStore.uid !== null && loginStore.token !== null){
@@ -31,28 +30,41 @@
     }
 
     function registrarUsuario(rutValue) {
-        // Llamada al backend para registrar el usuario
-        return router.push("/alumno")
+        axios.post(import.meta.env.VITE_API_URL + "/register", {
+            rut: rutValue,
+            uid: usuario.uid,
+            token: usuario.token
+        }).then(response => {
+            if (response.data.success === true){
+                return;
+            }
+            else {
+                alert("Error al registrar usuario")
+            }
+        }).catch(error => {
+            alert("Error al registrar usuario" + error)
+        })
+        return;
     }
 
     if (!esLoggeado()) {
         router.push("/")
     }
 
-    const handleSubmit = () => {
+    const enviarForm = () => {
         const rutValue = rut.value
 
-        if(esLoggeado() === true && usuario.rol === rolDB.alumno){
+        if(esLoggeado() === true && usuario.rol === db_rol.alu){
             registrarUsuario(rutValue);
             return router.push("/alumno")
         }
 
-        if(esLoggeado() === true && usuario.rol === rolDB.profesor){
+        if(esLoggeado() === true && usuario.rol === db_rol.pro){
             registrarUsuario(rutValue);
             return router.push("/profesor")
         }
 
-        if(esLoggeado() === true && usuario.rol === rolDB.director){
+        if(esLoggeado() === true && usuario.rol === db_rol.adm){
             registrarUsuario(rutValue);
             return router.push("/director")
         }
@@ -68,7 +80,7 @@
     <div class="flex flex-col items-center place-content-center h-screen">
 
         <div class="bg-gray-100 p-10 md:p-16 rounded-lg shadow-xl">
-            <form class="form flex flex-col items-center" @submit.prevent="handleSubmit">
+            <form class="form flex flex-col items-center" @submit.prevent="enviarForm">
             <h1 class="text-2xl font-semibold text-gray-800 pb-2 text-center">
                 Si es tu primera vez por aquí...
             </h1>
