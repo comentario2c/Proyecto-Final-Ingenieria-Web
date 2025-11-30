@@ -1,8 +1,15 @@
 <script setup>
-  import { useScanStore } from '../stores/scanStore';
-  import Scaner from './scanerDynamsoft.vue'; // Componente hijo
+  import { useScanStore } from '../../stores/scanStore.js';
+  import Scaner from '../../components/scanerDynamsoft.vue'; // Componente hijo
+  import axios from 'axios';
+  import { useLoginStore } from '../../stores/login.js'
+  import { getAuth, signOut } from "firebase/auth";
+  import { useRouter } from 'vue-router';
 
   const store = useScanStore();
+  const loginStore = useLoginStore();
+  const auth = getAuth();
+  const router = useRouter();
 
   // Mientras no se llenen todos los campos no se puede enviar el prestamo
   const enviarPrestamo = async () => {
@@ -12,7 +19,14 @@
     }
     
     // aviso al usuario del envio de datos
-    alert(`Enviando Préstamo:\nRUT: ${store.rutUsuario}\nEquipo: ${store.idEquipo}`);
+    axios.post(import.meta.env.VITE_API_URL + "/prestamos", {
+      rutUsuario: store.rutUsuario,
+      idEquipo: store.idEquipo
+    }).then((response) => {
+      alert(response.data.message);
+    }).catch((error) => {
+      alert(error.response.data.error);
+    })
     store.resetForm();
   };
 
@@ -23,14 +37,42 @@
     }
     
     // aviso al usuario del envio de datos
-    alert(`Enviando Devolución:\nID: ${store.idDevolucion}`);
+    axios.post(import.meta.env.VITE_API_URL + "/devolucion", {
+      idDevolucion: store.idDevolucion
+    }).then((response) => {
+      alert(response.data.message);
+    }).catch((error) => {
+      alert(error.response.data.error);
+    })
     store.resetForm();
+  }
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth) 
+      loginStore.uid = null
+      loginStore.usuario = null
+      loginStore.email = null
+      loginStore.rol = null
+      loginStore.token = null
+      
+      router.push('/') 
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error)
+    }
   }
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-6">
+      <div class="flex justify-end">
+          <button 
+          class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg shadow-sm transition-all duration-200 w-full sm:w-auto"
+          @click="handleLogout">
+          Cerrar Sesión
+        </button>
+      </div>
       <h1 class="text-2xl font-bold text-gray-800 text-center">Nuevo Préstamo</h1>
 
       <div class="space-y-2">
@@ -62,10 +104,10 @@
             type="text" 
             required
             placeholder="PC-LAB-04"
-            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none transition"
+            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition"
           />
           <button 
-            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
             title="Escanear Equipo"
             @click="store.abrirScanner('equipo')"
           >

@@ -1,129 +1,141 @@
-const db = require('../db');
+const admin = require('firebase-admin');
+const db = require("../db");
 
-const rol_db = {
-    alumno: "alumno",
-    profesor: "profesor",
+const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT); // Credenciales de firebase por variables de entorno
+
+// Inicializar firebase
+if (!admin.apps.length){
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+    })
 }
 
-const dominio_db = {
-    alumno: "alu.unach.cl",
-    profesor: "unach.cl"
+// Objetos para evitar magic strings
+const dominios = {
+    alu: "alu.unach.cl",
+    profesor: "unach.cl",
+    admin: "unach.cl"
 }
 
-const loginGoogle = async (req, res) => {
-    const uid = req.user.uid;
-    const email = req.user.email;
+const db_rol = {
+    alu: "alumno",
+    pro: "profesor",
+    adm: "admin"
+}
 
-    // pregunto si existe un nombre en el json de vue o en la base de datos, si no hay ninguno "Usuario"
-    const displayName = req.user.name || req.body.displayName || 'Usuario';
+// Mensajes de autenticación y errores
+const msg_auth = {
+    authTrue: "Autenticado",
+    authFalse: "No autenticado",
+    authError: "Error al autenticar",
+    authFirst: "Primer inicio de sesion",
+}
 
-    // Si no viene el uid o el email retornamos 400
-    if (!uid || !email) return res.status(400).json({ error: 'Faltan datos' });
+// Consultas
+// Obtener un usuario de la base de datos
+const userQuery = "SELECT * FROM Usuario WHERE ID_Usuario = ?"; 
+// Insertar un usuario en la base de datos aun sin rut
+const insertarUsuarioSQL = "INSERT INTO Usuario (ID_Usuario, nombre, correo, estado, rol) VALUES (?, ?, ?, ?, ?)"; 
 
-    try {
-        // Buscamos al usuario en la base de datos
-        const [rows] = await db.query('SELECT * FROM Usuario WHERE ID_Usuario = ?', [uid]);
+// con userQuery obtener un usuario de la base de datos
+async function obtenerUsuarioDeBD(uid){
+    const [rows] = await db.query(userQuery, [uid]);
 
-        // Si existe el usuario
-        if (rows.length > 0) {
-            const usuario = rows[0];
-
-            // Comprobamos el borrado logico
-            if (usuario.estado === 0) {
-                return res.status(403).json({ error: 'Cuenta desactivada. Contacte al administrador.' });
-            }
-
-            // Usuario registrado pero sin rut
-            if (!usuario.rut) {
-                return res.status(200).json({
-                    esNuevo: true, // Obligamos al usuario a registrarse 
-                    usuario: {
-                        uid: usuario.ID_Usuario,
-                        nombre: usuario.nombre,
-                        email: usuario.correo,
-                        rol: usuario.rol
-                    }
-                });
-            }
-
-            // Usuario ya registrado y con rut completo
-            return res.status(200).json({
-                esNuevo: false,
-                usuario: {
-                    uid: usuario.ID_Usuario,
-                    nombre: usuario.nombre,
-                    email: usuario.correo,
-                    rol: usuario.rol,
-                    rut: usuario.rut
-                }
-            });
-
-        } else {
-            // Cuando el usuario es nuevo
-            const dominio = email.split('@')[1];
-            let rolInicial = '';
-
-            // A través del correo deducimos si es un alumno o profesor
-            if (dominio === dominio_db.alumno) rolInicial = rol_db.alumno; // Evitamos magicstrings con el diccionario
-            else if (dominio === dominio_db.profesor) rolInicial = rol_db.profesor;
-            else return res.status(403).json({ error: 'Dominio no autorizado.' });
-
-            // Insertamos el nuevo usuario
-            await db.query(
-                'INSERT INTO Usuario (ID_Usuario, nombre, correo, rol, rut, estado) VALUES (?, ?, ?, ?, ?, ?)',
-                [uid, displayName, email, rolInicial, null, 1] 
-            );
-
-            // Devolvemos el rol y el nombre, el nombre para la vista de alumnos por lo menos y el rol para la redireccion
-            return res.status(201).json({
-                esNuevo: true,
-                usuario: {
-                    uid,
-                    nombre: displayName,
-                    email,
-                    rol: rolInicial
-                }
-            });
-        }
-
-    } catch (error) {
-        console.error('Error en loginController:', error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+    if(!rows || rows.length === 0) {
+        return null; 
     }
-};
+    return rows[0];
+}
 
-const completarPerfil = async (req, res) => {
-    const { rut } = req.body;
-    const uid = req.user.uid;
+// con insertarUsuarioSQL insertar un usuario en la base de datos aun sin rut
+async function insertarUsuarioDB(userInfo, rol){
+    await db.query(insertarUsuarioSQL, [userInfo.uid, userInfo.usuario, userInfo.email, true, rol]);
+}
 
-    if (!rut) {
-        return res.status(400).json({ error: 'El RUT es obligatorio' });
-    }
+// enviarRespuesta enviar una respuesta al cliente
+function enviarRespuesta(userInfo, rol, msg, res) {
+    res.json({
+        message: msg,
+        usuario: userInfo.usuario,
+        rol: rol,
+        uid: userInfo.uid,
+        token: userInfo.token,
+    })
+}
+
+// con rolPorDominio obtener el rol de un usuario por su dominio de su correo
+function rolPorDominio(email) {
+    const dominio = email.split("@")[1];
     
-    // Quitamos los . y - para evitar el too long (varchar(9))
-    const rutLimpio = rut.replace(/[\.\-]/g, '');
+    if(dominio === dominios.alu) return db_rol.alu;
+    if(dominio === dominios.profesor) return db_rol.pro;
+    // No se considera el rol admin, por seguridad debe ser asignado manualmente
+    
+    return null;
+}
 
-    if (rutLimpio.length > 9) {
-        return res.status(400).json({ error: 'RUT demasiado largo' });
-    }
+// Funcion principal
+const loginGoogle = (req, res) => {
+    const token = req.body.token;
 
-    try {
-        // Se actualiza el usuario agregando el rut
-        const [result] = await db.query(
-            'UPDATE Usuario SET rut = ? WHERE ID_Usuario = ?',
-            [rutLimpio, uid]
-        );
+    admin.auth().verifyIdToken(token)
+    .then(async(decodedToken) => {
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
+        // No está a nivel global para evitar que se mezcle con otro usuario si ambos iniciarion sesion al mismo tiempo
+        let userInfo = {
+            usuario: decodedToken.name,
+            email: decodedToken.email,
+            uid: decodedToken.uid,
+            token: token,
+            rol: null
+        };
+
+        const usuarioDB = await obtenerUsuarioDeBD(userInfo.uid);
+
+        // si el usuario existe en la base de datos
+        if(usuarioDB){
+            userInfo.rol = usuarioDB.rol;        
+
+            // si el usuario no tiene rol
+            if (!userInfo.rol) {
+                return res.status(403).json({ message: "Usuario registrado pero sin rol asignado." });
+            }
+
+            // si el usuario no tiene rut
+            if (!usuarioDB.rut) {
+                // el mensaje de primera vez para que el front envie al usuario al registro
+                return enviarRespuesta(userInfo, userInfo.rol, msg_auth.authFirst, res); 
+            }
+
+            // si existe y tiene rut
+            return enviarRespuesta(userInfo, userInfo.rol, msg_auth.authTrue, res);
+        } 
+        
+        // si el usuario no existe en la base de datos
+        else {
+            // se deduce el rol segun el dominio del correo
+            const rolInicial = rolPorDominio(userInfo.email);
+
+            // si el correo no tiene dominio permitido alu.unach.cl o unach.cl
+            if (!rolInicial) {
+                return res.status(403).json({ message: "Dominio de correo no permitido para registro." });
+            }
+
+            // se asigna el rol al usuario
+            userInfo.rol = rolInicial;
+
+            // se inserta el usuario en la base de datos y se envia el mensaje de primera vez
+            await insertarUsuarioDB(userInfo, userInfo.rol);
+            return enviarRespuesta(userInfo, userInfo.rol, msg_auth.authFirst, res);
         }
+    })
+    .catch((error) => {
+        console.error(error);
+        res.status(401).json({
+            message: "No autenticado",
+            error: error.message
+        });
+    });
+}
 
-        res.json({ message: 'Perfil completado exitosamente' });
-
-    } catch (error) {
-        console.error('Error en completarPerfil:', error);
-        res.status(500).json({ error: 'Error al actualizar perfil' });
-    }
-};
-
-module.exports = { loginGoogle, completarPerfil };
+module.exports = { loginGoogle }

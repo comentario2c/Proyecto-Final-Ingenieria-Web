@@ -1,106 +1,112 @@
 <script setup>
+// Importaciones normales
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAuth, signOut } from "firebase/auth";
 import { usePrestamosStore } from '../../stores/prestamosStore.js'
-import { useAuthStore } from '../../stores/authStore.js'
+import { useLoginStore } from '../../stores/login.js' 
 
-// Inicialización de Herramientas 
-const prestamosStore = usePrestamosStore() // Instancia del store de préstamos
-const authStore = useAuthStore() // Instancia del store de autenticación
-const router = useRouter() // Instancia del router
-const auth = getAuth() // Instancia de Firebase Auth
+// Inicializamos herramientas
+const prestamosStore = usePrestamosStore()
+const loginStore = useLoginStore() 
+const router = useRouter()
+const auth = getAuth()
 
-/**
- * @nombre onMounted
- * @desc Se ejecuta una vez que el componente se ha cargado en la página.
- */
 onMounted(async () => {
-  // 1. Obtener el ID del Store de forma robusta
-  const userID = authStore.usuario?.ID_Usuario || authStore.usuario?.uid; 
-
-  // Línea de debugging
-  console.log("UserID del Store para buscar préstamos:", userID); 
+  const userID = loginStore.uid; 
+  console.log("UserID recibido del LoginStore:", userID); 
 
   if (userID) { 
-    // 2. Si hay ID, buscar préstamos
     await prestamosStore.fetchMisPrestamos(userID); 
   } else {
-    // 3. Si no hay ID, redirigir al login
+    console.warn("No hay usuario en el LoginStore. Redirigiendo...");
     router.push('/');
   }
 })
 
-/**
- * @nombre handleLogout
- * @desc Se activa con el botón "Cerrar Sesión".
- * Limpia la sesión del usuario y lo redirige.
- */
 const handleLogout = async () => {
   try {
-    // Cerrar sesión en Firebase
     await signOut(auth) 
-    // Limpiar el "cerebro" (Pinia)
-    authStore.clearUser() 
-    // Redirigir al login
+    // Vaciamos manualmente porque el clearStore del compañero no funciona
+    loginStore.uid = null
+    loginStore.usuario = null
+    loginStore.email = null
+    loginStore.rol = null
+    loginStore.token = null
+    
     router.push('/') 
   } catch (error) {
     console.error("Error al cerrar sesión:", error)
-    alert("Error al cerrar sesión.")
   }
 }
 </script>
 
 <template>
-  <div class="p-4 sm:p-8 max-w-4xl mx-auto min-h-screen bg-gray-50">
+  <div class="p-4 sm:p-8 max-w-5xl mx-auto min-h-screen bg-gray-50">
     
     <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-200">
-      <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">
-        Bienvenido, {{ authStore.usuario?.nombre || 'Alumno' }}
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-0 text-center sm:text-left">
+        Bienvenido, {{ loginStore.nombre || 'Alumno' }}
       </h1>
       <button 
-        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md w-full sm:w-auto transition-all duration-200"
+        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg shadow-sm transition-all duration-200 w-full sm:w-auto"
         @click="handleLogout">
         Cerrar Sesión
       </button>
     </header>
     
-    <section class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-      <h2 class="text-2xl font-semibold mb-5 text-gray-800">Mis Préstamos</h2>
+    <section class="bg-white rounded-xl shadow-md overflow-hidden">
+      <div class="p-5 border-b border-gray-100">
+        <h2 class="text-xl font-bold text-gray-800">Mis Préstamos</h2>
+        <p class="text-sm text-gray-500 mt-1">Historial de tus equipos.</p>
+      </div>
       
-      <div v-if="prestamosStore.misPrestamos.length > 0">
+      <div v-if="prestamosStore.misPrestamos.length > 0" class="p-4 sm:p-6">
         
-        <div class="divide-y divide-gray-200">
+        <div class="hidden sm:flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider pb-3 border-b border-gray-200 mb-2">
+          <div class="w-1/2 pl-2">Equipo / Detalles</div>
+          <div class="w-1/4 text-center">Fecha Solicitud</div>
+          <div class="w-1/4 text-right pr-2">Estado</div>
+        </div>
+
+        <div class="divide-y divide-gray-100">
           
           <div 
             v-for="prestamo in prestamosStore.misPrestamos" 
             :key="prestamo.ID_Prestamo" 
-            class="py-4 flex flex-col sm:flex-row justify-between sm:items-center"
+            class="py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3 sm:gap-0"
           >
-            <div>
-              <p class="font-medium text-lg text-gray-900">{{ prestamo.modelo }}</p>
-              <p class="text-sm text-gray-500">Número de Serie: {{ prestamo.numeroSerie }}</p>
-              <p class="text-sm text-gray-500 mt-1">
-                Solicitado el: {{ new Date(prestamo.fechaPrestamo).toLocaleDateString() }}
-              </p>
-            </div>
-            
-            <div class="mt-3 sm:mt-0">
-              <span 
-                class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
-                :class="{
-                  'bg-green-100 text-green-800': prestamo.estado === 'Activo',
-                  'bg-gray-100 text-gray-700': prestamo.estado === 'Finalizado'
-                }"
-              >
-                {{ prestamo.estado }}
+            <div class="sm:w-1/2 flex flex-col">
+              <span class="font-bold text-gray-900 text-lg">{{ prestamo.modelo }}</span>
+              <span class="text-sm text-gray-500 flex items-center mt-1">
+                 <span class="text-gray-400 mr-1"># Serie:</span> {{ prestamo.numeroSerie }}
               </span>
             </div>
-          </div> </div>
+             
+            <div class="sm:w-1/4 flex items-center sm:justify-center text-gray-600 text-sm">
+                <span class="font-medium">
+                    {{ prestamo.fechaPrestamo ? new Date(prestamo.fechaPrestamo).toLocaleDateString() : 'Fecha pendiente' }}
+                </span>
+            </div>
+
+            <div class="sm:w-1/4 flex justify-start sm:justify-end mt-1 sm:mt-0">
+              <span 
+                class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border shadow-sm"
+                :class="{
+                  'bg-blue-50 text-blue-700 border-blue-200': prestamo.estado === 'Activo' || prestamo.estado === 'en_prestamo',
+                  'bg-gray-100 text-gray-600 border-gray-200': prestamo.estado === 'Finalizado' || prestamo.estado === 'disponible'
+                }"
+              >
+                {{ prestamo.estado ? prestamo.estado.toUpperCase() : 'DESCONOCIDO' }}
+              </span>
+            </div>
+          </div> 
+        </div>
       </div>
       
-      <div v-else>
-        <p class="text-center text-gray-500 p-6">No tienes préstamos activos o finalizados.</p>
+      <div v-else class="flex flex-col items-center justify-center p-12 text-center bg-gray-50">
+        <p class="text-gray-900 font-medium text-lg">Sin préstamos</p>
+        <p class="text-sm text-gray-500 mt-1">No tienes historial activo.</p>
       </div>
     </section>
   </div>

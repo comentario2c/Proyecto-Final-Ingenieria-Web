@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 // Auth components
-import login from "../components/loginGoogle.vue";
-import register from "../components/registerRut.vue";
+import login from "../views/auth/loginGoogle.vue";
+import register from "../views/auth/registerRut.vue";
 import Alumnos from '../views/Alumnos/Alumnos.vue';
-import profesor from "../components/profesorPrestamo.vue";
+import profesor from "../views/profesores/profesorPrestamo.vue";
 
 // Admin layout
 import AdminLayout from "../components/admin/AdminLayout.vue";
@@ -18,7 +18,7 @@ const router = createRouter({
     history: createWebHistory(),
     routes:[
         {
-            path: "/login",
+            path: "/",
             name: "login",
             component: login
         },
@@ -28,7 +28,7 @@ const router = createRouter({
             component: register,
         },
         {
-            path: "/",
+            path: "/alumnos",
             name: "alumnos",
             component: Alumnos
         },
