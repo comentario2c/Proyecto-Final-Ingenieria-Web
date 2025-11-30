@@ -1,7 +1,7 @@
 const db = require("../db");
 
 const equipoDevuelto = "SELECT ID_Prestamo FROM Prestamos WHERE ID_Equipo = ? AND fechaEntrega IS NULL";
-const devolucionEquipo = "UPDATE prestamos SET fechaEntrega = NOW() WHERE ID_Prestamo = ?";
+const devolucionEquipo = "UPDATE prestamos SET fechaEntrega = NOW(), estado = 'finalizado' WHERE ID_Prestamo = ?";
 
 const devolverEquipo = async (req, res) => {
     try{

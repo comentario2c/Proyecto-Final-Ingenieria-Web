@@ -1,6 +1,6 @@
 const db = require("../db");
 // query para insertar prestamo
-const insertarPrestamo = "INSERT INTO Prestamos (ID_Usuario, ID_Equipo, fechaPrestamo) VALUES (?, ?, NOW())";
+const insertarPrestamo = "INSERT INTO Prestamos (ID_Usuario, ID_Equipo, fechaPrestamo, estado) VALUES (?, ?, NOW(), 'activo')";
 const traerIdUsuario = "SELECT ID_Usuario FROM usuario WHERE rut = ?";
 
 const registrarPrestamo = async (req, res) => {

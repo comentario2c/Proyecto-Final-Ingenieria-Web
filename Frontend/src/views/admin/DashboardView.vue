@@ -68,7 +68,7 @@ export default {
 async mounted() {
   try {
     // Dashboard principal
-    const res = await axios.get("http://localhost:3000/api/dashboard");
+    const res = await axios.get(import.meta.env.VITE_API_URL + "/dashboard");
     this.datos = {
       equiposRegistrados: res.data.totalEquipos,
       salasRegistradas: res.data.totalSalas,
@@ -76,7 +76,7 @@ async mounted() {
     };
 
     // ALERTAS
-    const alertaRes = await axios.get("http://localhost:3000/api/dashboard/alertas");
+    const alertaRes = await axios.get(import.meta.env.VITE_API_URL + "/dashboard/alertas");
     this.alertas = alertaRes.data;
 
   } catch (error) {

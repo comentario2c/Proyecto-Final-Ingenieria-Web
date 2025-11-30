@@ -184,7 +184,7 @@ app.get("/api/salas-disponibles", async (req, res) => {
         s.nombreSala,
         s.stockEquipos as stockSugerido,
         COUNT(e.ID_Equipo) as stockReal
-      FROM sala s
+      FROM sala
       LEFT JOIN equipos e ON s.nombreSala = e.nombreSala AND e.activo = 1
       WHERE s.activo = 1
     `;
@@ -420,11 +420,11 @@ app.get("/api/salas", async (req, res) => {
         s.nombreSala,
         s.stockEquipos as stockSugerido,
         s.descripcion,
-        s.activo,
+        e.estado,
         COUNT(e.ID_Equipo) as stockReal
-      FROM sala s
-      LEFT JOIN equipos e ON s.nombreSala = e.nombreSala AND e.activo = 1
-      GROUP BY s.nombreSala, s.stockEquipos, s.descripcion, s.activo
+      FROM sala as s
+      LEFT JOIN equipos e ON s.nombreSala = e.nombreSala AND e.estado = 1
+      GROUP BY s.nombreSala, s.stockEquipos, s.descripcion, e.estado
     `);
     res.json(salas);
   } catch (error) {
@@ -906,6 +906,9 @@ app.get("/api/debug-rutas", async (req, res) => {
     });
   }
 });
+
+const authRoutes = require("./router/authRoutes");
+app.use("/api/auth", authRoutes);
 
 const prestamosRoutes = require("./router/prestamosRoutes");
 app.use("/api/prestamos", prestamosRoutes);

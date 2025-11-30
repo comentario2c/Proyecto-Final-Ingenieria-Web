@@ -29,7 +29,7 @@ const handleLogout = async () => {
     await signOut(auth) 
     // Vaciamos manualmente porque el clearStore del compañero no funciona
     loginStore.uid = null
-    loginStore.nombre = null
+    loginStore.usuario = null
     loginStore.email = null
     loginStore.rol = null
     loginStore.token = null

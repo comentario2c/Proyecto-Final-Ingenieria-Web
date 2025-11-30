@@ -1,8 +1,9 @@
 const admin = require('firebase-admin');
-const db = require("../db")
+const db = require("../db");
 
-const serviceAccount = require("../sdkFirebase.json"); // deberia de manejarse con variables de entorno
+const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT); // Credenciales de firebase por variables de entorno
 
+// Inicializar firebase
 if (!admin.apps.length){
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
@@ -16,20 +17,13 @@ const dominios = {
     admin: "unach.cl"
 }
 
-const userInfo = {
-    usuario: "",
-    email: "",
-    uid: "",
-    token: "",
-    rol: "" || null
-}
-
 const db_rol = {
     alu: "alumno",
     pro: "profesor",
     adm: "admin"
 }
 
+// Mensajes de autenticación y errores
 const msg_auth = {
     authTrue: "Autenticado",
     authFalse: "No autenticado",
@@ -38,42 +32,30 @@ const msg_auth = {
 }
 
 // Consultas
-const userQuery = "SELECT * FROM Usuario WHERE ID_Usuario = ?"
-const insertarUsuario = "INSERT INTO Usuario (ID_Usuario, nombre, correo, estado, rol) VALUES (?, ?, ?, ?, ?)"
+// Obtener un usuario de la base de datos
+const userQuery = "SELECT * FROM Usuario WHERE ID_Usuario = ?"; 
+// Insertar un usuario en la base de datos aun sin rut
+const insertarUsuarioSQL = "INSERT INTO Usuario (ID_Usuario, nombre, correo, estado, rol) VALUES (?, ?, ?, ?, ?)"; 
 
-// Funciones auxiliares
-function consultarUsuario(uid){
-    const rowsUsuario = db.query(userQuery, [uid]);
+// con userQuery obtener un usuario de la base de datos
+async function obtenerUsuarioDeBD(uid){
+    const [rows] = await db.query(userQuery, [uid]);
 
-    if(rowsUsuario === 0){
-        res.json({
-            message: msg_auth.authFirst
-        })
-        return true;
+    if(!rows || rows.length === 0) {
+        return null; 
     }
-
-    if (rowsUsuario > 1) {
-        res.json({
-            message: msg_auth.authError
-        })
-        return false;
-    }
-    return true;
+    return rows[0];
 }
 
-async function insertarUsuarioDB(rol){
-    const result = await db.query(insertarUsuario, [userInfo.uid, userInfo.usuario, userInfo.email, true, rol]); 
-    if (result === 0){
-        res.json({
-            message: msg_auth.authError
-        })
-        return;
-    }
+// con insertarUsuarioSQL insertar un usuario en la base de datos aun sin rut
+async function insertarUsuarioDB(userInfo, rol){
+    await db.query(insertarUsuarioSQL, [userInfo.uid, userInfo.usuario, userInfo.email, true, rol]);
 }
 
-async function enviarRespuesta(rol, res) {
+// enviarRespuesta enviar una respuesta al cliente
+function enviarRespuesta(userInfo, rol, msg, res) {
     res.json({
-        message: msg_auth.authTrue,
+        message: msg,
         usuario: userInfo.usuario,
         rol: rol,
         uid: userInfo.uid,
@@ -81,67 +63,79 @@ async function enviarRespuesta(rol, res) {
     })
 }
 
+// con rolPorDominio obtener el rol de un usuario por su dominio de su correo
+function rolPorDominio(email) {
+    const dominio = email.split("@")[1];
+    
+    if(dominio === dominios.alu) return db_rol.alu;
+    if(dominio === dominios.profesor) return db_rol.pro;
+    // No se considera el rol admin, por seguridad debe ser asignado manualmente
+    
+    return null;
+}
+
 // Funcion principal
 const loginGoogle = (req, res) => {
-
     const token = req.body.token;
 
-    try{
-        admin.auth().verifyIdToken(token)
-        .then((decodedToken) => {
-            userInfo.usuario = decodedToken.name;
-            userInfo.email = decodedToken.email;
-            userInfo.uid = decodedToken.uid;
-            userInfo.token = token;
+    admin.auth().verifyIdToken(token)
+    .then(async(decodedToken) => {
 
-            const dominio = userInfo.email.split("@")[1];
+        // No está a nivel global para evitar que se mezcle con otro usuario si ambos iniciarion sesion al mismo tiempo
+        let userInfo = {
+            usuario: decodedToken.name,
+            email: decodedToken.email,
+            uid: decodedToken.uid,
+            token: token,
+            rol: null
+        };
 
-            switch (true){
-                case dominio === dominios.alu:
-                    userInfo.rol = db_rol.alu;
-                    if (!consultarUsuario(userInfo.uid)) {
-                        enviarRespuesta(userInfo.rol, res);
-                    }
-                    enviarRespuesta(userInfo.rol, res);
-                    insertarUsuarioDB(userInfo.rol);
-                    break;
-                case dominio === dominios.profesor:
-                    userInfo.rol = db_rol.pro;
-                    if (!consultarUsuario(userInfo.uid)) {
-                        enviarRespuesta(userInfo.rol, res);
-                    }
-                    enviarRespuesta(userInfo.rol, res);
-                    insertarUsuarioDB(userInfo.rol);
-                    break;
-                case dominio === dominios.admin:
-                    userInfo.rol = db_rol.adm;
-                    if (!consultarUsuario(userInfo.uid)) {
-                        enviarRespuesta(userInfo.rol, res);
-                    }
-                    enviarRespuesta(userInfo.rol, res);
-                    insertarUsuarioDB(userInfo.rol);
-                    break;
-                default:
-                    userInfo.rol = "";
-                    break;
+        const usuarioDB = await obtenerUsuarioDeBD(userInfo.uid);
+
+        // si el usuario existe en la base de datos
+        if(usuarioDB){
+            userInfo.rol = usuarioDB.rol;        
+
+            // si el usuario no tiene rol
+            if (!userInfo.rol) {
+                return res.status(403).json({ message: "Usuario registrado pero sin rol asignado." });
             }
 
-            
-        })
-        .catch((error) => {
-            console.log(error);
-            res.json({
-                message: "No autenticado",
-                user: "",
-                rol: "",
-                uid: "",
-                token: "",
-                usuario: ""
-            })
-        })
-    }catch(error){
-        console.log(error);
-    }
+            // si el usuario no tiene rut
+            if (!usuarioDB.rut) {
+                // el mensaje de primera vez para que el front envie al usuario al registro
+                return enviarRespuesta(userInfo, userInfo.rol, msg_auth.authFirst, res); 
+            }
+
+            // si existe y tiene rut
+            return enviarRespuesta(userInfo, userInfo.rol, msg_auth.authTrue, res);
+        } 
+        
+        // si el usuario no existe en la base de datos
+        else {
+            // se deduce el rol segun el dominio del correo
+            const rolInicial = rolPorDominio(userInfo.email);
+
+            // si el correo no tiene dominio permitido alu.unach.cl o unach.cl
+            if (!rolInicial) {
+                return res.status(403).json({ message: "Dominio de correo no permitido para registro." });
+            }
+
+            // se asigna el rol al usuario
+            userInfo.rol = rolInicial;
+
+            // se inserta el usuario en la base de datos y se envia el mensaje de primera vez
+            await insertarUsuarioDB(userInfo, userInfo.rol);
+            return enviarRespuesta(userInfo, userInfo.rol, msg_auth.authFirst, res);
+        }
+    })
+    .catch((error) => {
+        console.error(error);
+        res.status(401).json({
+            message: "No autenticado",
+            error: error.message
+        });
+    });
 }
 
 module.exports = { loginGoogle }

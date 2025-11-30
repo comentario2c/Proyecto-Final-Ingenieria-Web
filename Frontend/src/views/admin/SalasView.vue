@@ -287,7 +287,7 @@ export default {
   methods: {
     async cargarSalas() {
       try {
-        const res = await axios.get("http://localhost:3000/api/salas");
+        const res = await axios.get(import.meta.env.VITE_API_URL + "/salas");
         this.salas = res.data;
         console.log("Salas cargadas:", this.salas);
       } catch (error) {
@@ -314,7 +314,7 @@ export default {
     // Verificar si se puede eliminar una sala
     async verificarEliminarSala(sala) {
       try {
-        const response = await axios.get(`http://localhost:3000/api/salas/${sala.nombreSala}/estado-eliminacion`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/salas/${sala.nombreSala}/estado-eliminacion`);
         const estado = response.data.data;
         
         if (estado.puedeEliminar) {
@@ -354,7 +354,7 @@ export default {
     // Eliminar sala normal (vacía)
     async eliminarSala(nombre) {
       try {
-        await axios.delete(`http://localhost:3000/api/salas/${nombre}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/salas/${nombre}`);
         alert('Sala eliminada correctamente');
         this.cargarSalas();
       } catch (error) {
@@ -366,7 +366,7 @@ export default {
     // Eliminar sala forzadamente (con equipos)
     async eliminarSalaForzada(nombre) {
       try {
-        await axios.delete(`http://localhost:3000/api/salas/${nombre}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/salas/${nombre}`);
         alert(`Sala "${nombre}" eliminada junto con todos sus equipos`);
         this.cargarSalas();
       } catch (error) {
@@ -378,11 +378,11 @@ export default {
     // Preparar modal para mover equipos
     async prepararMoverEquipos(sala) {
       try {
-        const response = await axios.get(`http://localhost:3000/api/salas-disponibles?excluir=${sala.nombreSala}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/salas-disponibles?excluir=${sala.nombreSala}`);
         this.salasDisponibles = response.data.data;
         
         // Obtener cantidad de equipos en la sala
-        const equiposResponse = await axios.get(`http://localhost:3000/api/equipos-por-sala/${sala.nombreSala}`);
+        const equiposResponse = await axios.get(`${import.meta.env.VITE_API_URL}/equipos-por-sala/${sala.nombreSala}`);
         this.equiposEnSala = equiposResponse.data.total;
         
         this.movimiento.salaOrigen = sala.nombreSala;
@@ -407,12 +407,12 @@ export default {
     // Confirmar mover equipos
     async confirmarMoverEquipos() {
       try {
-        let endpoint = 'http://localhost:3000/api/salas/mover-equipos-cantidad';
+        let endpoint = import.meta.env.VITE_API_URL + '/salas/mover-equipos-cantidad';
         let body = { ...this.movimiento };
         
         // Si es mover todos, usar el endpoint original
         if (this.moverTodos) {
-          endpoint = 'http://localhost:3000/api/salas/mover-equipos-mejorado';
+          endpoint = import.meta.env.VITE_API_URL + '/salas/mover-equipos-mejorado';
           body = {
             salaOrigen: this.movimiento.salaOrigen,
             salaDestino: this.movimiento.salaDestino
@@ -440,12 +440,12 @@ export default {
       try {
         if (this.editando) {
           await axios.put(
-            `http://localhost:3000/api/salas/${this.form.nombreSala}`,
+            `${import.meta.env.VITE_API_URL}/salas/${this.form.nombreSala}`,
             this.form
           );
           alert("Sala actualizada correctamente");
         } else {
-          await axios.post("http://localhost:3000/api/salas", this.form);
+          await axios.post(`${import.meta.env.VITE_API_URL}/salas`, this.form);
           alert("Sala creada correctamente");
         }
 
