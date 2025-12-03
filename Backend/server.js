@@ -29,6 +29,9 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  ssl:{
+    rejectUnauthorized: false
+  }
 });
 
 // Probar conexión una vez al inicio
@@ -53,7 +56,7 @@ app.put("/api/salas/mover-equipos-mejorado", async (req, res) => {
   try {
     const { salaOrigen, salaDestino } = req.body;
 
-    console.log("📦 Moviendo equipos:", { salaOrigen, salaDestino });
+    console.log(" Moviendo equipos:", { salaOrigen, salaDestino });
 
     // Validaciones básicas
     if (!salaOrigen || !salaDestino) {
@@ -184,7 +187,7 @@ app.get("/api/salas-disponibles", async (req, res) => {
         s.nombreSala,
         s.stockEquipos as stockSugerido,
         COUNT(e.ID_Equipo) as stockReal
-      FROM sala
+      FROM sala s
       LEFT JOIN equipos e ON s.nombreSala = e.nombreSala AND e.activo = 1
       WHERE s.activo = 1
     `;
@@ -212,7 +215,7 @@ app.get("/api/salas-disponibles", async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
-    });
+  });
   }
 });
 
@@ -420,17 +423,17 @@ app.get("/api/salas", async (req, res) => {
         s.nombreSala,
         s.stockEquipos as stockSugerido,
         s.descripcion,
-        e.estado,
+        s.activo,
         COUNT(e.ID_Equipo) as stockReal
-      FROM sala as s
-      LEFT JOIN equipos e ON s.nombreSala = e.nombreSala AND e.estado = 1
-      GROUP BY s.nombreSala, s.stockEquipos, s.descripcion, e.estado
+      FROM sala s
+      LEFT JOIN equipos e ON s.nombreSala = e.nombreSala AND e.activo = 1
+      GROUP BY s.nombreSala, s.stockEquipos, s.descripcion, s.activo
     `);
     res.json(salas);
   } catch (error) {
     console.error('Error listando salas:', error);
-    res.status(500).json({ error: "Error listando salas", detail: error.message });
-  }
+    res.status(500).json({ error: "Error listando salas", detail: error.message });
+  }
 });
 
 // Crear sala - SOLO stockSugerido

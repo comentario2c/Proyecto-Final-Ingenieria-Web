@@ -2,6 +2,8 @@ const db = require("../db");
 
 const equipoDevuelto = "SELECT ID_Prestamo FROM Prestamos WHERE ID_Equipo = ? AND fechaEntrega IS NULL";
 const devolucionEquipo = "UPDATE prestamos SET fechaEntrega = NOW(), estado = 'finalizado' WHERE ID_Prestamo = ?";
+const updateEquipo = "UPDATE equipos SET estado = 'Disponible' WHERE ID_Equipo = ?";
+
 
 const devolverEquipo = async (req, res) => {
     try{
@@ -23,6 +25,8 @@ const devolverEquipo = async (req, res) => {
             return res.status(200).json({message: "Equipo devuelto correctamente"})
         }
 
+        // Actualizar el estado a disponible luego de su devolución
+        await db.query(updateEquipo, [idEquipo]);
         return res.status(500).json({message: "Error al devolver el equipo"})
         
     } catch (error) {

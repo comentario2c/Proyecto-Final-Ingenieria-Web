@@ -1,7 +1,7 @@
 // Busca un archivo llamado '.env' en la raíz y carga sus valores.
 require('dotenv').config();
 const mysql = require("mysql2/promise")
-
+const fs = require("fs")
 
 const pool = mysql.createPool ({
     host: process.env.DB_HOST,
@@ -10,7 +10,10 @@ const pool = mysql.createPool ({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    ssl: {
+        rejectUnauthorized: false,
+    }
 })
 
 pool.getConnection().then(conn => {

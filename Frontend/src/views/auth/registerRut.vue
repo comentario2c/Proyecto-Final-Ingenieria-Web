@@ -115,7 +115,7 @@
                 required
                 class="px-4 py-2 mb-4 w-64 md:w-80 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button class="bg-blue-700 text-white py-2 rounded-lg w-64 md:w-80 hover:bg-blue-800 hover:scale-105 transition duration-300">
+            <button class="bg-blue-700 text-white py-2 rounded-lg w-64 md:w-80 hover:bg-blue-800 hover:scale-90 transition duration-300">
                 Registrarse
             </button>
             </form>

@@ -4,7 +4,7 @@ import axios from 'axios'
 
 // Configuración para conectarse con el backend
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3000/api'
+  baseURL: import.meta.env.VITE_API_URL
 });
 
 export const usePrestamosStore = defineStore('prestamos', () => {

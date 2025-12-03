@@ -46,7 +46,7 @@ const handleLogout = async () => {
     
     <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-200">
       <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-0 text-center sm:text-left">
-        Bienvenido, {{ loginStore.nombre || 'Alumno' }}
+        Bienvenido, {{ loginStore.usuario || 'Alumno' }}
       </h1>
       <button 
         class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg shadow-sm transition-all duration-200 w-full sm:w-auto"

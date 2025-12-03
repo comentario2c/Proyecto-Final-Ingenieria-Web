@@ -150,7 +150,7 @@ const cargarSalas = async () => {
 
  try {
 
-  const response = await axios.get("http://localhost:3000/api/salas");
+  const response = await axios.get(import.meta.env.VITE_API_URL + "/salas");
 
   salas.value = response.data;
 
